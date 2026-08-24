@@ -1,11 +1,30 @@
 import { useState } from 'react'
-import type { FormEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 
+import { Icon } from '../components/Icon'
 import type { ConversationState } from './useConversation'
 
 type ChatPageProps = {
   state: ConversationState
 }
+
+const starterPrompts = [
+  {
+    icon: 'activity' as const,
+    label: '建立持续关注',
+    prompt: '每周五整理 Java Agent 前沿，并核对官方来源',
+  },
+  {
+    icon: 'book' as const,
+    label: '拆解学习目标',
+    prompt: '帮我制定四周的 Spring AI 学习路线',
+  },
+  {
+    icon: 'compass' as const,
+    label: '推进手头任务',
+    prompt: '把一个模糊目标拆成今天能开始的步骤',
+  },
+]
 
 export function ChatPage({ state }: ChatPageProps) {
   const [input, setInput] = useState('')
@@ -20,6 +39,13 @@ export function ChatPage({ state }: ChatPageProps) {
     }
   }
 
+  function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault()
+      event.currentTarget.form?.requestSubmit()
+    }
+  }
+
   return (
     <section className="chat-page" aria-busy={state.isLoading || state.isSending}>
       {state.isLoading && !state.conversation && (
@@ -28,9 +54,19 @@ export function ChatPage({ state }: ChatPageProps) {
 
       {!state.isLoading && state.conversation?.messages.length === 0 && (
         <div className="chat-empty">
-          <span className="assistant-mark">✦</span>
-          <h1>从一个真实需求开始</h1>
-          <p>消息会保存到对话历史。下一阶段再由模型理解意图并生成可确认的 Skill 草案。</p>
+          <div className="chat-eyebrow"><Icon name="sparkles" size={15} /> 对话，是所有能力的起点</div>
+          <h1>今天，想推进什么？</h1>
+          <p className="chat-intro">描述一个目标、任务或持续兴趣。LifeSkill 会先记住上下文，再逐步把它变成可执行、可确认的能力。</p>
+          <div className="starter-grid">
+            {starterPrompts.map((starter) => (
+              <button key={starter.label} type="button" onClick={() => setInput(starter.prompt)}>
+                <span className="starter-icon"><Icon name={starter.icon} size={18} /></span>
+                <span><strong>{starter.label}</strong><small>{starter.prompt}</small></span>
+                <Icon name="arrow-right" size={16} />
+              </button>
+            ))}
+          </div>
+          <div className="trust-note"><Icon name="check" size={15} /> 对话历史自动保存，长期任务创建前会先请你确认</div>
         </div>
       )}
 
@@ -41,7 +77,7 @@ export function ChatPage({ state }: ChatPageProps) {
               className={message.role === 'USER' ? 'user-message' : 'assistant-message'}
               key={message.id}
             >
-              {message.role !== 'USER' && <span className="assistant-mark">✦</span>}
+              {message.role !== 'USER' && <span className="assistant-mark"><Icon name="sparkles" size={16} /></span>}
               <p>{message.content}</p>
             </article>
           ))}
@@ -63,16 +99,17 @@ export function ChatPage({ state }: ChatPageProps) {
           maxLength={4000}
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="描述一个任务、学习目标或想持续关注的主题…"
           disabled={!state.conversation || state.isLoading}
         />
         <div>
-          <span className="composer-hint">{input.length}/4000</span>
+          <span className="composer-hint">Ctrl + Enter 发送 · {input.length}/4000</span>
           <button
             className="send"
             disabled={!state.conversation || state.isLoading || state.isSending || !input.trim()}
             aria-label="发送"
-          >↑</button>
+          ><Icon name="arrow-up" size={18} strokeWidth={2} /></button>
         </div>
       </form>
     </section>

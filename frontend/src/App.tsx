@@ -1,15 +1,16 @@
 import { useState } from 'react'
 
+import { Icon } from './components/Icon'
 import { ChatPage } from './conversation/ChatPage'
 import { useConversation } from './conversation/useConversation'
 
 type View = 'chat' | 'learning' | 'pulse'
 type LearningType = 'cards' | 'article' | 'quiz'
 
-const navItems: Array<{ id: View; label: string }> = [
-  { id: 'chat', label: '对话' },
-  { id: 'learning', label: '学习' },
-  { id: 'pulse', label: '动态' },
+const navItems: Array<{ id: View; label: string; icon: 'message' | 'book' | 'activity' }> = [
+  { id: 'chat', label: '对话', icon: 'message' },
+  { id: 'learning', label: '学习', icon: 'book' },
+  { id: 'pulse', label: '动态', icon: 'activity' },
 ]
 
 function App() {
@@ -29,12 +30,12 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark">L</span><span>LifeSkill</span></div>
+        <div className="brand"><span className="brand-mark"><Icon name="sparkles" size={18} /></span><span>LifeSkill <small>Hub</small></span></div>
         <button
           className="new-chat"
           disabled={conversationState.isLoading || conversationState.isSending}
           onClick={handleNewConversation}
-        >＋ 新对话</button>
+        ><Icon name="plus" size={17} /> 新对话</button>
         <nav>
           {navItems.map((item) => (
             <button
@@ -42,19 +43,24 @@ function App() {
               key={item.id}
               onClick={() => setView(item.id)}
             >
-              {item.label}
+              <Icon name={item.icon} size={18} /> <span>{item.label}</span>
             </button>
           ))}
         </nav>
         <div className="recent">
           <span>当前对话</span>
-          <button onClick={() => setView('chat')}>{conversationState.conversation?.title ?? '尚未连接'}</button>
+          <button onClick={() => setView('chat')}><Icon name="message" size={15} /> <span>{conversationState.conversation?.title ?? '尚未连接'}</span></button>
         </div>
         <div className="profile"><span>L</span><small>本地空间</small></div>
       </aside>
 
       <main className="main">
-        <header className="topbar"><strong>{pageTitle}</strong><span>⌕　···</span></header>
+        <header className="topbar">
+          <strong>{pageTitle}</strong>
+          <span className={conversationState.error ? 'sync-status error' : 'sync-status'}>
+            <i />{conversationState.isLoading ? '正在连接' : conversationState.error ? '连接中断' : '历史已同步'}
+          </span>
+        </header>
         {view === 'chat' && <ChatPage state={conversationState} />}
 
         {view === 'learning' && (
