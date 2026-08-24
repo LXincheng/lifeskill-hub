@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: lifeskill-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/lifeskill}
+    username: ${DB_USERNAME:lifeskill}
+    password: ${DB_PASSWORD:lifeskill}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+  ai:
+    deepseek:
+      api-key: ${DEEPSEEK_API_KEY:local-placeholder}
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+lifeskill:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
