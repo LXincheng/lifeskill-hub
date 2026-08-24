@@ -2,16 +2,15 @@ import { useState } from 'react'
 
 import { Icon } from './components/Icon'
 import { ChatPage } from './conversation/ChatPage'
-import { ConversationContextPanel } from './conversation/ConversationContextPanel'
 import { useConversation } from './conversation/useConversation'
 
 type View = 'chat' | 'learning' | 'pulse'
 type LearningType = 'cards' | 'article' | 'quiz'
 
-const navItems: Array<{ id: View; label: string; icon: 'message' | 'book' | 'activity' }> = [
+const navItems: Array<{ id: View; label: string; icon: 'message' | 'book' | 'rss' }> = [
   { id: 'chat', label: '对话', icon: 'message' },
   { id: 'learning', label: '学习', icon: 'book' },
-  { id: 'pulse', label: '动态', icon: 'activity' },
+  { id: 'pulse', label: '动态', icon: 'rss' },
 ]
 
 function App() {
@@ -31,7 +30,7 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand" title="LifeSkill Hub"><span className="brand-mark"><Icon name="sparkles" size={17} /></span></div>
+        <div className="brand" title="LifeSkill Hub"><span className="brand-mark">LS</span></div>
         <button
           className="new-chat"
           aria-label="新对话"
@@ -62,7 +61,6 @@ function App() {
         {view === 'chat' && (
           <div className="chat-workspace">
             <ChatPage state={conversationState} />
-            <ConversationContextPanel state={conversationState} />
           </div>
         )}
 

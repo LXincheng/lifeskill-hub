@@ -109,7 +109,7 @@ export function ChatPage({ state }: ChatPageProps) {
             className="send"
             disabled={!state.conversation || state.isLoading || state.isSending || !input.trim()}
             aria-label="发送"
-          ><Icon name="arrow-up" size={18} strokeWidth={2} /></button>
+          ><Icon name="send" size={16} strokeWidth={1.9} /></button>
         </div>
       </form>
     </section>
