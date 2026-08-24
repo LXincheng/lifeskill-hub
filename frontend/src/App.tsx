@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import { Icon } from './components/Icon'
 import { ChatPage } from './conversation/ChatPage'
+import { ConversationContextPanel } from './conversation/ConversationContextPanel'
 import { useConversation } from './conversation/useConversation'
 
 type View = 'chat' | 'learning' | 'pulse'
@@ -30,12 +31,13 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand"><span className="brand-mark"><Icon name="sparkles" size={18} /></span><span>LifeSkill <small>Hub</small></span></div>
+        <div className="brand" title="LifeSkill Hub"><span className="brand-mark"><Icon name="sparkles" size={17} /></span></div>
         <button
           className="new-chat"
+          aria-label="新对话"
           disabled={conversationState.isLoading || conversationState.isSending}
           onClick={handleNewConversation}
-        ><Icon name="plus" size={17} /> 新对话</button>
+        ><Icon name="plus" size={18} /><span>新建</span></button>
         <nav>
           {navItems.map((item) => (
             <button
@@ -47,21 +49,22 @@ function App() {
             </button>
           ))}
         </nav>
-        <div className="recent">
-          <span>当前对话</span>
-          <button onClick={() => setView('chat')}><Icon name="message" size={15} /> <span>{conversationState.conversation?.title ?? '尚未连接'}</span></button>
-        </div>
-        <div className="profile"><span>L</span><small>本地空间</small></div>
+        <div className="profile" title="本地空间"><span>L</span></div>
       </aside>
 
       <main className="main">
         <header className="topbar">
-          <strong>{pageTitle}</strong>
+          <div className="page-identity"><strong>{view === 'chat' ? '对话' : pageTitle}</strong>{view === 'chat' && <><i /> <span>{pageTitle}</span></>}</div>
           <span className={conversationState.error ? 'sync-status error' : 'sync-status'}>
             <i />{conversationState.isLoading ? '正在连接' : conversationState.error ? '连接中断' : '历史已同步'}
           </span>
         </header>
-        {view === 'chat' && <ChatPage state={conversationState} />}
+        {view === 'chat' && (
+          <div className="chat-workspace">
+            <ChatPage state={conversationState} />
+            <ConversationContextPanel state={conversationState} />
+          </div>
+        )}
 
         {view === 'learning' && (
           <section className="learning-page">
