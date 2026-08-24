@@ -13,7 +13,8 @@
 - [x] React + TypeScript 前端目录
 - [x] Spring Boot + Spring AI 后端目录
 - [x] PostgreSQL 本地配置
-- [ ] 前后端构建通过
+- [x] 前后端构建通过
+- [x] 命名、架构与开发交付规范
 - [ ] GitHub 公开仓库和首次推送
 
 验收：新机器按 README 能启动数据库、后端和前端；`/api/status` 返回状态。

@@ -9,7 +9,8 @@
 1. `docs/PROJECT_CONTEXT.md`
 2. `docs/PRODUCT.md`
 3. `docs/ARCHITECTURE.md`
-4. `docs/DEVELOPMENT_PLAN.md`
+4. `docs/ENGINEERING_STANDARDS.md`
+5. `docs/DEVELOPMENT_PLAN.md`
 
 然后检查 `git status`，保留用户已有改动，不覆盖无关文件。
 
@@ -34,12 +35,21 @@
 
 ## 工程约束
 
+- 命名、模块边界、错误处理、测试与 Agent 开发必须遵循 `docs/ENGINEERING_STANDARDS.md`。
 - 后端包按业务能力组织，而不是堆在 `controller/service/repository` 全局目录。
 - 外部来源先落为 Evidence，模型生成 Claim 时必须引用 Evidence ID。
 - 数字、日期、URL、阈值等由确定性代码校验，不能依赖模型自检。
 - 所有长期执行都必须具备暂停、超时、最大步骤、预算和审计字段。
 - 新功能必须写测试；架构或产品边界变化需要同步更新 `docs/`。
 - 密钥只从环境变量读取，不能进入代码、日志、测试快照或提交历史。
+
+## 开发完成后的交付方式
+
+- 先说明用户可感知的结果，再说明实现；不要只列修改文件。
+- 用精炼、有重点的方式讲解一个产品判断和一个可迁移的技术设计。
+- 指出最多三个值得用户阅读的代码入口，并解释调用关系。
+- 明确验证结果、已知限制和最值得继续的下一步。
+- 详细格式遵循 `docs/ENGINEERING_STANDARDS.md` 的“每次开发后的成长交付”。
 
 ## 当前阶段
 

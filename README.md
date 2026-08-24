@@ -31,6 +31,7 @@ lifeskill-hub/
 ├── docs/
 │   ├── PRODUCT.md           # 产品目标、核心功能、非目标
 │   ├── ARCHITECTURE.md      # 系统、Agent 与数据架构
+│   ├── ENGINEERING_STANDARDS.md # 命名、边界与交付规范
 │   ├── DEVELOPMENT_PLAN.md  # MVP 迭代路径和验收标准
 │   └── PROJECT_CONTEXT.md   # 新对话快速接续上下文
 ├── frontend/                # React + TypeScript
@@ -86,7 +87,8 @@ npm run dev
 2. [docs/PROJECT_CONTEXT.md](./docs/PROJECT_CONTEXT.md)
 3. [docs/PRODUCT.md](./docs/PRODUCT.md)
 4. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
-5. [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md)
+5. [docs/ENGINEERING_STANDARDS.md](./docs/ENGINEERING_STANDARDS.md)
+6. [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md)
 
 ## License
 

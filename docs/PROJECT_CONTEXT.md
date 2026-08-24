@@ -42,10 +42,19 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 重要结论经过二次核验。
 - 在动态页展示，并可进入 Java Agent 学习文件夹。
 
+## 当前工程状态（2026-08-24）
+
+- M0 本地骨架已完成：React 页面骨架、Spring Boot API、Flyway 初始迁移、CI 与 Apache-2.0 License。
+- 前端 typecheck/生产构建和后端测试均已通过；后端测试使用 H2 隔离本地数据库差异。
+- GitHub 公开仓库与首次推送正在完成；本机暂未安装 Docker，因此 PostgreSQL 联调仍待验证。
+- 下一开发切片是 M1“聊天创建 Skill”：先完成对话持久化，再接 DeepSeek 结构化草案，最后由用户确认落库。
+- 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
+
 ## 新窗口建议提示词
 
 ```text
 请先阅读 AGENTS.md、docs/PROJECT_CONTEXT.md、docs/PRODUCT.md、
-docs/ARCHITECTURE.md 和 docs/DEVELOPMENT_PLAN.md，然后检查 git status。
+docs/ARCHITECTURE.md、docs/ENGINEERING_STANDARDS.md 和
+docs/DEVELOPMENT_PLAN.md，然后检查 git status。
 继续当前里程碑，不扩展非目标功能，并在修改后运行相关测试。
 ```
