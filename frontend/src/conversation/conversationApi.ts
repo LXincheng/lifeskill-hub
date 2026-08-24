@@ -7,12 +7,25 @@ export type ConversationMessage = {
   createdAt: string
 }
 
+export type SkillDraft = {
+  id: string
+  sourceMessageId: string
+  title: string
+  objective: string
+  dayOfWeek: string
+  time: string
+  timezone: string
+  status: 'PENDING_CONFIRMATION'
+  createdAt: string
+}
+
 export type Conversation = {
   id: string
   title: string
   createdAt: string
   updatedAt: string
   messages: ConversationMessage[]
+  skillDrafts: SkillDraft[]
 }
 
 type ProblemDetails = {
@@ -41,7 +54,8 @@ async function requestConversation(path: string, init?: RequestInit): Promise<Co
     }
     throw new ConversationApiError(problem.detail ?? '请求暂时失败，请稍后重试。', response.status, problem.code)
   }
-  return (await response.json()) as Conversation
+  const conversation = (await response.json()) as Conversation
+  return { ...conversation, skillDrafts: conversation.skillDrafts ?? [] }
 }
 
 export function createConversation(): Promise<Conversation> {

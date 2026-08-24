@@ -42,12 +42,14 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 重要结论经过二次核验。
 - 在动态页展示，并可进入 Java Agent 学习文件夹。
 
-## 当前工程状态（2026-08-24）
+## 当前工程状态（2026-08-25）
 
 - M0 本地骨架和 M1.1 真实对话骨架已完成：对话与消息领域模型、PostgreSQL 迁移、REST API、React 接入和刷新历史恢复。
 - 前端 typecheck/生产构建和后端领域、应用、HTTP/持久化测试均已通过；后端测试使用 H2 隔离本地数据库差异。
 - GitHub 公开仓库与首次推送已完成；本机暂未安装 Docker，因此 PostgreSQL 联调仍待验证。
-- 下一开发切片是 M1.2：通过 Model Port 接入 DeepSeek，生成经过 Schema 与业务规则校验的结构化 SkillDraft。
+- M1.2 代码已完成：Model Port 隔离 DeepSeek，支持三类意图、结构化 Schema 校验、SkillDraft 业务校验与持久化，并在模型不可用时安全降级。
+- 当前环境没有 `DEEPSEEK_API_KEY`，真实 DeepSeek 联调仍待完成；模型默认关闭，启用需同时设置密钥和 `LIFESKILL_MODEL_ENABLED=true`。
+- 下一开发切片是 M1.3：在聊天中确认 SkillDraft，幂等创建 Skill 与首个 SkillVersion。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
 
 ## 新窗口建议提示词

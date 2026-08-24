@@ -2,7 +2,7 @@
 
 LifeSkill Hub 是一个以聊天为入口的个人能力中枢。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习卡片、文章、测验和实践。
 
-当前仓库已完成 M1.1 真实对话骨架，正在沿下面的 MVP 闭环迭代：
+当前仓库已完成 M1.2 结构化 Skill 草案代码，正在沿下面的 MVP 闭环迭代：
 
 ```text
 聊天表达需求
@@ -61,8 +61,8 @@ cd backend
 当前对话 API：
 
 - `POST /api/conversations`：创建对话
-- `POST /api/conversations/{id}/messages`：发送并持久化用户消息
-- `GET /api/conversations/{id}`：读取按时间排序的对话历史
+- `POST /api/conversations/{id}/messages`：保存消息、识别意图并按需生成 Skill 草案
+- `GET /api/conversations/{id}`：读取对话历史和待确认 Skill 草案
 
 ### 3. 前端
 
@@ -79,6 +79,7 @@ npm run dev
 复制 `.env.example` 并按需配置：
 
 - `DEEPSEEK_API_KEY`：DeepSeek API Key
+- `LIFESKILL_MODEL_ENABLED`：设置为 `true` 后启用 DeepSeek；默认关闭并使用安全降级
 - `DB_URL`：JDBC 数据库地址
 - `DB_USERNAME`：数据库用户名
 - `DB_PASSWORD`：数据库密码

@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import dev.lifeskill.conversation.api.dto.ConversationResponse;
 import dev.lifeskill.conversation.api.dto.SendMessageRequest;
 import dev.lifeskill.conversation.application.ConversationApplicationService;
+import dev.lifeskill.conversation.application.ConversationTurnApplicationService;
+import dev.lifeskill.conversation.application.ConversationTurnResult;
+import dev.lifeskill.skill.application.SkillDraftApplicationService;
 import jakarta.validation.Valid;
 
 @RestController
@@ -23,9 +26,16 @@ import jakarta.validation.Valid;
 public class ConversationController {
 
     private final ConversationApplicationService conversationService;
+    private final ConversationTurnApplicationService conversationTurnService;
+    private final SkillDraftApplicationService skillDraftService;
 
-    public ConversationController(ConversationApplicationService conversationService) {
+    public ConversationController(
+            ConversationApplicationService conversationService,
+            ConversationTurnApplicationService conversationTurnService,
+            SkillDraftApplicationService skillDraftService) {
         this.conversationService = conversationService;
+        this.conversationTurnService = conversationTurnService;
+        this.skillDraftService = skillDraftService;
     }
 
     @PostMapping
@@ -36,7 +46,10 @@ public class ConversationController {
 
     @GetMapping("/{conversationId}")
     public ConversationResponse getConversation(@PathVariable UUID conversationId) {
-        return ConversationResponse.from(conversationService.getConversation(conversationId));
+        var conversation = conversationService.getConversation(conversationId);
+        return ConversationResponse.from(
+                conversation,
+                skillDraftService.findByConversationId(conversationId));
     }
 
     @PostMapping("/{conversationId}/messages")
@@ -44,7 +57,8 @@ public class ConversationController {
     public ConversationResponse sendMessage(
             @PathVariable UUID conversationId,
             @Valid @RequestBody SendMessageRequest request) {
-        return ConversationResponse.from(conversationService.sendUserMessage(conversationId, request.content()));
+        ConversationTurnResult result = conversationTurnService.sendMessage(conversationId, request.content());
+        return ConversationResponse.from(result.conversation(), result.skillDrafts());
     }
 
 }

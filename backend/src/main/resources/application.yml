@@ -29,5 +29,7 @@ management:
         enabled: true
 
 lifeskill:
+  model:
+    enabled: ${LIFESKILL_MODEL_ENABLED:false}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

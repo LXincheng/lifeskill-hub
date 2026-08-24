@@ -3,6 +3,7 @@ import type { FormEvent, KeyboardEvent } from 'react'
 
 import { Icon } from '../components/Icon'
 import type { ConversationState } from './useConversation'
+import type { SkillDraft } from './conversationApi'
 
 type ChatPageProps = {
   state: ConversationState
@@ -25,6 +26,20 @@ const starterPrompts = [
     prompt: '把一个模糊目标拆成今天能开始的步骤',
   },
 ]
+
+const dayLabels: Record<string, string> = {
+  MONDAY: '周一',
+  TUESDAY: '周二',
+  WEDNESDAY: '周三',
+  THURSDAY: '周四',
+  FRIDAY: '周五',
+  SATURDAY: '周六',
+  SUNDAY: '周日',
+}
+
+function formatSchedule(draft: SkillDraft) {
+  return `每${dayLabels[draft.dayOfWeek] ?? draft.dayOfWeek} ${draft.time} · ${draft.timezone}`
+}
 
 export function ChatPage({ state }: ChatPageProps) {
   const [input, setInput] = useState('')
@@ -79,6 +94,21 @@ export function ChatPage({ state }: ChatPageProps) {
             >
               {message.role !== 'USER' && <span className="assistant-mark"><Icon name="sparkles" size={16} /></span>}
               <p>{message.content}</p>
+            </article>
+          ))}
+          {state.conversation.skillDrafts.map((draft) => (
+            <article className="skill-draft" key={draft.id}>
+              <header>
+                <span className="skill-draft-kicker"><i /> Skill 草案</span>
+                <span>尚未创建</span>
+              </header>
+              <h2>{draft.title}</h2>
+              <p>{draft.objective}</p>
+              <dl>
+                <div><dt>执行频率</dt><dd>{formatSchedule(draft)}</dd></div>
+                <div><dt>当前状态</dt><dd>等待你确认</dd></div>
+              </dl>
+              <footer><Icon name="check" size={14} /> 只有确认后，系统才会创建并运行这个 Skill</footer>
             </article>
           ))}
         </div>

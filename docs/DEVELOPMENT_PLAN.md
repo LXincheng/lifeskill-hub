@@ -29,12 +29,12 @@
 - [x] 创建对话、发送消息、读取历史 API
 - [x] 前端从真实 API 展示消息和基础错误状态
 
-### M1.2：DeepSeek 生成结构化草案
+### M1.2：DeepSeek 生成结构化草案（代码完成，待真实密钥联调）
 
-- 用 Model Port 隔离 Spring AI/DeepSeek 细节
-- 意图分类：普通问答、一次搜索、持续性需求
-- SkillDraft 结构化输出、Schema 校验和失败降级
-- 模型契约测试与固定样例回归
+- [x] 用 Model Port 隔离 Spring AI/DeepSeek 细节
+- [x] 意图分类：普通问答、一次搜索、持续性需求
+- [x] SkillDraft 结构化输出、Schema 校验和失败降级
+- [x] 模型契约测试与固定样例回归
 
 ### M1.3：用户确认并落库
 

@@ -48,6 +48,13 @@ public final class Conversation {
         return message;
     }
 
+    public Message addAssistantMessage(UUID messageId, String content, Instant now) {
+        Message message = new Message(messageId, MessageRole.ASSISTANT, content, now);
+        messages.add(message);
+        updatedAt = now;
+        return message;
+    }
+
     public UUID id() {
         return id;
     }

@@ -39,6 +39,18 @@ nav { display: grid; gap: 3px; margin-top: 7px; }
 .assistant-message { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 11px; }
 .assistant-mark { display: grid; place-items: center; width: 27px; height: 27px; color: #4259b9; background: #e7e8f0; border-radius: 8px; }
 .assistant-message p { margin-top: 1px; line-height: 1.75; }
+.skill-draft { width: min(100%, 620px); margin: 2px 0 4px 39px; padding: 18px 20px; background: #fff; border: 1px solid #d9dee8; border-radius: 8px; box-shadow: 0 12px 28px rgba(28, 39, 67, .055); }
+.skill-draft header { display: flex; align-items: center; justify-content: space-between; color: #7a8496; font-size: 10px; }
+.skill-draft-kicker { display: inline-flex; align-items: center; gap: 7px; color: #315fc6; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+.skill-draft-kicker i { width: 6px; height: 6px; background: #2563eb; border-radius: 50%; box-shadow: 0 0 0 3px #e8efff; }
+.skill-draft h2 { margin: 15px 0 7px; font-family: "Plus Jakarta Sans", "Noto Sans SC", sans-serif; font-size: 17px; font-weight: 600; }
+.skill-draft > p { margin: 0; color: #657086; font-size: 12px; line-height: 1.7; }
+.skill-draft dl { display: grid; gap: 9px; margin: 17px 0; padding: 13px 0; border-block: 1px solid var(--line); }
+.skill-draft dl div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 12px; font-size: 11px; }
+.skill-draft dt { color: #8a93a4; }
+.skill-draft dd { margin: 0; color: #303a4d; }
+.skill-draft footer { display: flex; align-items: center; gap: 6px; color: #718095; font-size: 10px; }
+.skill-draft footer .icon { color: #2f8a72; }
 .chat-status, .sending-status { color: #85867f; text-align: center; font-size: 12px; }
 .chat-empty { width: min(100%, 780px); margin: auto; text-align: center; }
 .chat-eyebrow { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 18px; color: #5366b2; font-size: 11px; font-weight: 500; letter-spacing: .04em; }
@@ -132,6 +144,7 @@ nav { display: grid; gap: 3px; margin-top: 7px; }
   .composer-hint { font-size: 9px; }
   .learning-content, .pulse-page { padding: 25px 16px; }
   .user-message { width: 94%; }
+  .skill-draft { margin-left: 0; padding: 16px; }
   .learning-list > button { grid-template-columns: 70px minmax(0, 1fr); }
   .learning-list small { grid-column: 2; }
 }
