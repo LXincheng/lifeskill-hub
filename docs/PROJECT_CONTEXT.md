@@ -46,7 +46,7 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 - M0 本地骨架已完成：React 页面骨架、Spring Boot API、Flyway 初始迁移、CI 与 Apache-2.0 License。
 - 前端 typecheck/生产构建和后端测试均已通过；后端测试使用 H2 隔离本地数据库差异。
-- GitHub 公开仓库与首次推送正在完成；本机暂未安装 Docker，因此 PostgreSQL 联调仍待验证。
+- GitHub 公开仓库与首次推送已完成；本机暂未安装 Docker，因此 PostgreSQL 联调仍待验证。
 - 下一开发切片是 M1“聊天创建 Skill”：先完成对话持久化，再接 DeepSeek 结构化草案，最后由用户确认落库。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
 
