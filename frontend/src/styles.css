@@ -11,6 +11,7 @@ h1, h2 { font-family: Newsreader, "Noto Serif SC", serif; font-weight: 400; }
 .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px 20px; font-family: Newsreader, "Noto Serif SC", serif; font-size: 18px; }
 .brand-mark { display: grid; place-items: center; width: 30px; height: 30px; color: white; background: #4259b9; border-radius: 8px; font-family: Inter, sans-serif; font-size: 13px; }
 .new-chat { padding: 9px 10px; color: inherit; text-align: left; background: transparent; border: 1px solid #d4d4cd; border-radius: 8px; }
+.new-chat:disabled { opacity: .5; cursor: default; }
 nav { display: grid; gap: 2px; margin-top: 14px; }
 .nav-item { padding: 9px 10px; color: #6f7069; text-align: left; background: transparent; border: 0; border-radius: 7px; }
 .nav-item.active { color: #282924; background: #dfdfd8; }
@@ -23,12 +24,22 @@ nav { display: grid; gap: 2px; margin-top: 14px; }
 .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 58px; padding: 0 22px; border-bottom: 1px solid #e4e3dd; }
 .topbar strong { font-size: 13px; font-weight: 500; }
 .topbar span { color: #85867f; }
-.chat-page { width: min(100%, 760px); margin: 0 auto; padding: 34px 30px; }
+.chat-page { display: flex; flex-direction: column; width: min(100%, 760px); min-height: calc(100vh - 58px); margin: 0 auto; padding: 34px 30px; }
 .date { margin-bottom: 28px; color: #96968f; text-align: center; font-size: 11px; }
-.user-message { width: min(88%, 540px); margin: 0 0 30px auto; padding: 13px 15px; background: #eeeeea; border-radius: 14px 14px 3px 14px; line-height: 1.65; }
+.message-list { display: grid; gap: 24px; }
+.user-message { width: min(88%, 540px); margin-left: auto; padding: 13px 15px; background: #eeeeea; border-radius: 14px 14px 3px 14px; line-height: 1.65; }
+.user-message p, .assistant-message p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .assistant-message { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 11px; }
 .assistant-mark { display: grid; place-items: center; width: 27px; height: 27px; color: #4259b9; background: #e7e8f0; border-radius: 8px; }
-.assistant-message p { margin: 1px 0 14px; line-height: 1.75; }
+.assistant-message p { margin-top: 1px; line-height: 1.75; }
+.chat-status, .sending-status { color: #85867f; text-align: center; font-size: 12px; }
+.chat-empty { max-width: 520px; margin: auto; text-align: center; }
+.chat-empty .assistant-mark { margin: 0 auto 15px; }
+.chat-empty h1 { margin: 0 0 8px; font-size: 30px; }
+.chat-empty p { margin: 0; color: #74756e; line-height: 1.7; }
+.sending-status { margin-top: 18px; }
+.chat-error { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; padding: 10px 12px; color: #8a3838; background: #fff2f0; border: 1px solid #edd0cb; border-radius: 8px; font-size: 12px; }
+.chat-error button { padding: 4px 8px; color: inherit; background: transparent; border: 1px solid currentColor; border-radius: 6px; }
 .agent-flow { margin: 17px 0; padding: 2px 0 4px 14px; border-left: 1px solid #ced0d8; }
 .agent-flow summary { margin-bottom: 10px; cursor: pointer; font-size: 12px; font-weight: 500; }
 .agent-step { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; align-items: center; gap: 7px; margin: 8px 0; color: #74756e; font-size: 11px; }
@@ -47,11 +58,13 @@ nav { display: grid; gap: 2px; margin-top: 14px; }
 .draft-actions button, .pulse-item button { padding: 7px 10px; color: inherit; background: transparent; border: 1px solid #d2d2cb; border-radius: 7px; }
 .draft-actions .primary { color: white; background: #3e55ae; border-color: #3e55ae; }
 .draft-actions button:disabled { opacity: .7; cursor: default; }
-.composer { margin-top: 30px; padding: 11px 12px 9px; background: white; border: 1px solid #d8d8d1; border-radius: 13px; box-shadow: 0 8px 28px rgba(40, 42, 37, .07); }
+.composer { margin-top: auto; padding: 11px 12px 9px; background: white; border: 1px solid #d8d8d1; border-radius: 13px; box-shadow: 0 8px 28px rgba(40, 42, 37, .07); transform: translateY(20px); }
 .composer textarea { width: 100%; min-height: 58px; resize: vertical; color: inherit; background: transparent; border: 0; outline: 0; }
 .composer > div { display: flex; justify-content: space-between; }
+.composer-hint { align-self: center; color: #a0a19a; font-size: 10px; }
 .composer button { width: 31px; height: 31px; background: transparent; border: 0; border-radius: 8px; }
 .composer .send { color: white; background: #3e55ae; }
+.composer .send:disabled { opacity: .45; cursor: default; }
 .learning-page { display: grid; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 58px); }
 .folders { padding: 27px 15px; background: #f6f6f1; border-right: 1px solid #e2e1db; }
 .folders h2 { margin: 0 9px 18px; font-size: 22px; }

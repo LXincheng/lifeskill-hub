@@ -2,7 +2,7 @@
 
 LifeSkill Hub 是一个以聊天为入口的个人能力中枢。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习卡片、文章、测验和实践。
 
-当前仓库处于 MVP 初始化阶段，优先实现一条完整闭环：
+当前仓库已完成 M1.1 真实对话骨架，正在沿下面的 MVP 闭环迭代：
 
 ```text
 聊天表达需求
@@ -57,6 +57,12 @@ cd backend
 ```
 
 后端默认运行在 `http://localhost:8080`，状态接口为 `GET /api/status`。
+
+当前对话 API：
+
+- `POST /api/conversations`：创建对话
+- `POST /api/conversations/{id}/messages`：发送并持久化用户消息
+- `GET /api/conversations/{id}`：读取按时间排序的对话历史
 
 ### 3. 前端
 
