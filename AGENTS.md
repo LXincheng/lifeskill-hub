@@ -11,6 +11,7 @@
 3. `docs/ARCHITECTURE.md`
 4. `docs/ENGINEERING_STANDARDS.md`
 5. `docs/DEVELOPMENT_PLAN.md`
+6. `docs/DESIGN_SYSTEM.md`
 
 然后检查 `git status`，保留用户已有改动，不覆盖无关文件。
 
@@ -30,6 +31,7 @@
 - 核心后端使用 Java 21 + Spring Boot，保持模块化单体，不拆微服务。
 - AI 使用 Spring AI 接入 DeepSeek，模型只是推理层；工具执行、权限、预算和发布决策由 Java Harness 控制。
 - 前端使用 React + TypeScript；视觉强调留白、排版和内容，不复刻 Claude 配色。
+- 前端视觉和图标必须遵循 `docs/DESIGN_SYSTEM.md`，不要在页面中临时混用其他图标集或尺寸体系。
 - PostgreSQL 是唯一主数据库；Flyway 管理结构迁移。
 - MVP 不引入 Kafka、Elasticsearch、向量数据库、LangGraph 或自治多 Agent 框架。
 

@@ -33,6 +33,7 @@ lifeskill-hub/
 │   ├── ARCHITECTURE.md      # 系统、Agent 与数据架构
 │   ├── ENGINEERING_STANDARDS.md # 命名、边界与交付规范
 │   ├── DEVELOPMENT_PLAN.md  # MVP 迭代路径和验收标准
+│   ├── DESIGN_SYSTEM.md      # 视觉令牌、图标和响应式约束
 │   └── PROJECT_CONTEXT.md   # 新对话快速接续上下文
 ├── frontend/                # React + TypeScript
 ├── backend/                 # Spring Boot + Spring AI
@@ -96,6 +97,7 @@ npm run dev
 4. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)
 5. [docs/ENGINEERING_STANDARDS.md](./docs/ENGINEERING_STANDARDS.md)
 6. [docs/DEVELOPMENT_PLAN.md](./docs/DEVELOPMENT_PLAN.md)
+7. [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md)
 
 ## License
 

@@ -27,10 +27,11 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 ## UI 方向
 
-- Claude 风格的留白、阅读排版、无气泡 AI 消息和轻量用户气泡。
+- 采用 Figma 新版原型的紧凑工作台结构，同时保留充足留白、清晰阅读层级和无气泡消息。
 - 不使用 Claude 陶土色；采用中性纸白/墨色与少量钴蓝、青绿状态色。
 - Agent 流程是细线、圆点和短文本，默认折叠，运行时才出现。
 - 避免统计仪表盘、渐变装饰、过多圆角卡片和大面积图标。
+- 桌面侧栏固定为 76px，移动端使用底部导航；字号、间距、圆角和 Lucide 图标统一由 `docs/DESIGN_SYSTEM.md` 约束。
 
 ## 首个业务切片
 
@@ -51,12 +52,13 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 当前环境没有 `DEEPSEEK_API_KEY`，真实 DeepSeek 联调仍待完成；模型默认关闭，启用需同时设置密钥和 `LIFESKILL_MODEL_ENABLED=true`。
 - 下一开发切片是 M1.3：在聊天中确认 SkillDraft，幂等创建 Skill 与首个 SkillVersion。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
+- 新版前端工作台已经按 `docs/DESIGN_SYSTEM.md` 重构，对话、学习和动态共用导航、字体、图标及响应式规则。
 
 ## 新窗口建议提示词
 
 ```text
 请先阅读 AGENTS.md、docs/PROJECT_CONTEXT.md、docs/PRODUCT.md、
 docs/ARCHITECTURE.md、docs/ENGINEERING_STANDARDS.md 和
-docs/DEVELOPMENT_PLAN.md，然后检查 git status。
+docs/DEVELOPMENT_PLAN.md、docs/DESIGN_SYSTEM.md，然后检查 git status。
 继续当前里程碑，不扩展非目标功能，并在修改后运行相关测试。
 ```
