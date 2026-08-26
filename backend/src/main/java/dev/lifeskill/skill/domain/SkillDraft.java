@@ -13,6 +13,9 @@ public record SkillDraft(
         WeeklySchedule schedule,
         SkillDraftStatus status,
         String promptVersion,
+        UUID confirmedSkillId,
+        String confirmationKey,
+        Instant confirmedAt,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -28,8 +31,48 @@ public record SkillDraft(
         Objects.requireNonNull(schedule, "Skill draft schedule is required");
         Objects.requireNonNull(status, "Skill draft status is required");
         promptVersion = requireText(promptVersion, "Prompt version", 40);
+        validateConfirmation(status, confirmedSkillId, confirmationKey, confirmedAt);
         Objects.requireNonNull(createdAt, "Skill draft creation time is required");
         Objects.requireNonNull(updatedAt, "Skill draft update time is required");
+    }
+
+    public SkillDraft confirm(UUID skillId, String idempotencyKey, Instant confirmedAt) {
+        Objects.requireNonNull(skillId, "Confirmed skill id is required");
+        String normalizedKey = requireText(idempotencyKey, "Idempotency key", 120);
+        Objects.requireNonNull(confirmedAt, "Confirmation time is required");
+        if (status == SkillDraftStatus.CONFIRMED) {
+            return this;
+        }
+        return new SkillDraft(
+                id,
+                conversationId,
+                sourceMessageId,
+                title,
+                objective,
+                schedule,
+                SkillDraftStatus.CONFIRMED,
+                promptVersion,
+                skillId,
+                normalizedKey,
+                confirmedAt,
+                createdAt,
+                confirmedAt);
+    }
+
+    private static void validateConfirmation(
+            SkillDraftStatus status,
+            UUID confirmedSkillId,
+            String confirmationKey,
+            Instant confirmedAt) {
+        boolean hasConfirmation = confirmedSkillId != null || confirmationKey != null || confirmedAt != null;
+        if (status == SkillDraftStatus.PENDING_CONFIRMATION && hasConfirmation) {
+            throw new IllegalArgumentException("Pending skill draft must not contain confirmation data");
+        }
+        if (status == SkillDraftStatus.CONFIRMED) {
+            Objects.requireNonNull(confirmedSkillId, "Confirmed skill id is required");
+            requireText(confirmationKey, "Idempotency key", 120);
+            Objects.requireNonNull(confirmedAt, "Confirmation time is required");
+        }
     }
 
     private static String requireText(String value, String fieldName, int maxLength) {

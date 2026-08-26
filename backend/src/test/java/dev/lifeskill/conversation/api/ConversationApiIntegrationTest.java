@@ -1,9 +1,11 @@
 package dev.lifeskill.conversation.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,6 +26,7 @@ import dev.lifeskill.conversation.application.model.ConversationIntent;
 import dev.lifeskill.conversation.application.model.ModelDecision;
 import dev.lifeskill.conversation.application.model.ModelSkillDraftProposal;
 import dev.lifeskill.conversation.application.port.ModelPort;
+import com.jayway.jsonpath.JsonPath;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -31,6 +35,9 @@ class ConversationApiIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockitoBean
     private ModelPort modelPort;
@@ -59,7 +66,7 @@ class ConversationApiIntegrationTest {
 
         String conversationId = location.substring(location.lastIndexOf('/') + 1);
 
-        mockMvc.perform(post("/api/conversations/{conversationId}/messages", conversationId)
+        String messageResponse = mockMvc.perform(post("/api/conversations/{conversationId}/messages", conversationId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"content\":\"每周五整理 Java Agent 前沿\"}"))
                 .andExpect(status().isCreated())
@@ -70,7 +77,45 @@ class ConversationApiIntegrationTest {
                 .andExpect(jsonPath("$.skillDrafts", hasSize(1)))
                 .andExpect(jsonPath("$.skillDrafts[0].title").value("Java Agent Weekly"))
                 .andExpect(jsonPath("$.skillDrafts[0].dayOfWeek").value("FRIDAY"))
-                .andExpect(jsonPath("$.skillDrafts[0].status").value("PENDING_CONFIRMATION"));
+                .andExpect(jsonPath("$.skillDrafts[0].status").value("PENDING_CONFIRMATION"))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        String draftId = JsonPath.read(messageResponse, "$.skillDrafts[0].id");
+        String confirmationResponse = mockMvc.perform(post("/api/skill-drafts/{draftId}/confirmations", draftId)
+                        .header("Idempotency-Key", "test-confirmation-key"))
+                .andExpect(status().isCreated())
+                .andExpect(header().string("Location", org.hamcrest.Matchers.startsWith("/api/skills/")))
+                .andExpect(jsonPath("$.draftStatus").value("CONFIRMED"))
+                .andExpect(jsonPath("$.skillName").value("Java Agent Weekly"))
+                .andExpect(jsonPath("$.skillStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.currentVersion").value(1))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        String skillId = JsonPath.read(confirmationResponse, "$.skillId");
+
+        mockMvc.perform(post("/api/skill-drafts/{draftId}/confirmations", draftId)
+                        .header("Idempotency-Key", "test-confirmation-key"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.skillId").value(skillId))
+                .andExpect(jsonPath("$.currentVersion").value(1));
+
+        mockMvc.perform(patch("/api/skills/{skillId}", skillId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"PAUSED\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PAUSED"))
+                .andExpect(jsonPath("$.currentVersion").value(1));
+
+        mockMvc.perform(patch("/api/skills/{skillId}", skillId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"dayOfWeek\":\"MONDAY\",\"time\":\"08:30\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.dayOfWeek").value("MONDAY"))
+                .andExpect(jsonPath("$.time").value("08:30"))
+                .andExpect(jsonPath("$.currentVersion").value(2));
 
         mockMvc.perform(get("/api/conversations/{conversationId}", conversationId))
                 .andExpect(status().isOk())
@@ -78,7 +123,20 @@ class ConversationApiIntegrationTest {
                 .andExpect(jsonPath("$.messages[0].content").value("每周五整理 Java Agent 前沿"))
                 .andExpect(jsonPath("$.skillDrafts", hasSize(1)))
                 .andExpect(jsonPath("$.skillDrafts[0].objective")
-                        .value("每周整理 Java Agent 前沿，并优先核对官方来源。"));
+                        .value("每周整理 Java Agent 前沿，并优先核对官方来源。"))
+                .andExpect(jsonPath("$.skillDrafts[0].status").value("CONFIRMED"))
+                .andExpect(jsonPath("$.skillDrafts[0].confirmedSkillId").value(skillId));
+
+        Integer skillCount = jdbcTemplate.queryForObject(
+                "select count(*) from skill where source_draft_id = ?",
+                Integer.class,
+                java.util.UUID.fromString(draftId));
+        Integer versionCount = jdbcTemplate.queryForObject(
+                "select count(*) from skill_version where skill_id = ?",
+                Integer.class,
+                java.util.UUID.fromString(skillId));
+        assertThat(skillCount).isEqualTo(1);
+        assertThat(versionCount).isEqualTo(2);
     }
 
     @Test
@@ -158,5 +216,14 @@ class ConversationApiIntegrationTest {
         mockMvc.perform(get("/api/conversations/{conversationId}", java.util.UUID.randomUUID()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("CONVERSATION_NOT_FOUND"));
+
+        mockMvc.perform(post("/api/skill-drafts/{draftId}/confirmations", java.util.UUID.randomUUID()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_IDEMPOTENCY_KEY"));
+
+        mockMvc.perform(post("/api/skill-drafts/{draftId}/confirmations", java.util.UUID.randomUUID())
+                        .header("Idempotency-Key", "unknown-draft"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("SKILL_DRAFT_NOT_FOUND"));
     }
 }

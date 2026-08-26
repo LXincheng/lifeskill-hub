@@ -1,5 +1,6 @@
 package dev.lifeskill.skill.domain;
 
 public enum SkillDraftStatus {
-    PENDING_CONFIRMATION
+    PENDING_CONFIRMATION,
+    CONFIRMED
 }

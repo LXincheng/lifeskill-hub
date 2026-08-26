@@ -57,8 +57,8 @@ function App() {
                   <div className="panel-heading"><span>会话状态</span><Icon name="activity" size={14} /></div>
                   <dl className="conversation-facts">
                     <div><dt>消息</dt><dd>{conversation?.messages.length ?? 0}</dd></div>
-                    <div><dt>待确认草案</dt><dd>{conversation?.skillDrafts.length ?? 0}</dd></div>
-                    <div><dt>存储</dt><dd className="success">已同步</dd></div>
+                    <div><dt>待确认草案</dt><dd>{conversation?.skillDrafts.filter((draft) => draft.status === 'PENDING_CONFIRMATION').length ?? 0}</dd></div>
+                    <div><dt>存储</dt><dd className={conversationState.error ? '' : 'success'}>{conversationState.isLoading ? '连接中' : conversationState.error ? '同步失败' : '已同步'}</dd></div>
                   </dl>
                 </section>
                 <section>

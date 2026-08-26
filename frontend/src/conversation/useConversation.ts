@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 
 import {
   ConversationApiError,
+  confirmSkillDraft,
   createConversation,
   getConversation,
   sendConversationMessage,
@@ -15,9 +16,11 @@ export type ConversationState = {
   error: string | null
   isLoading: boolean
   isSending: boolean
+  confirmingDraftId: string | null
   reloadConversation: () => Promise<void>
   startNewConversation: () => Promise<void>
   sendMessage: (content: string) => Promise<boolean>
+  confirmDraft: (draftId: string) => Promise<boolean>
 }
 
 export function useConversation(): ConversationState {
@@ -25,7 +28,9 @@ export function useConversation(): ConversationState {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [confirmingDraftId, setConfirmingDraftId] = useState<string | null>(null)
   const hasInitialized = useRef(false)
+  const confirmationKeys = useRef(new Map<string, string>())
 
   const rememberConversation = useCallback((nextConversation: Conversation) => {
     localStorage.setItem(ACTIVE_CONVERSATION_KEY, nextConversation.id)
@@ -84,6 +89,26 @@ export function useConversation(): ConversationState {
     }
   }, [conversation, isSending, rememberConversation])
 
+  const confirmDraft = useCallback(async (draftId: string) => {
+    if (!conversation || confirmingDraftId) return false
+
+    const idempotencyKey = confirmationKeys.current.get(draftId) ?? crypto.randomUUID()
+    confirmationKeys.current.set(draftId, idempotencyKey)
+    setConfirmingDraftId(draftId)
+    setError(null)
+    try {
+      await confirmSkillDraft(draftId, idempotencyKey)
+      rememberConversation(await getConversation(conversation.id))
+      confirmationKeys.current.delete(draftId)
+      return true
+    } catch {
+      setError('Skill 未能确认，请重试；重复操作不会创建多个 Skill。')
+      return false
+    } finally {
+      setConfirmingDraftId(null)
+    }
+  }, [confirmingDraftId, conversation, rememberConversation])
+
   useEffect(() => {
     if (hasInitialized.current) return
     hasInitialized.current = true
@@ -95,8 +120,10 @@ export function useConversation(): ConversationState {
     error,
     isLoading,
     isSending,
+    confirmingDraftId,
     reloadConversation,
     startNewConversation,
     sendMessage,
+    confirmDraft,
   }
 }

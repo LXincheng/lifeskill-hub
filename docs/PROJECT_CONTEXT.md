@@ -43,7 +43,7 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 重要结论经过二次核验。
 - 在动态页展示，并可进入 Java Agent 学习文件夹。
 
-## 当前工程状态（2026-08-25）
+## 当前工程状态（2026-08-26）
 
 - M0 本地骨架和 M1.1 真实对话骨架已完成：对话与消息领域模型、PostgreSQL 迁移、REST API、React 接入和刷新历史恢复。
 - 前端 typecheck/生产构建和后端领域、应用、HTTP/持久化测试均已通过；后端测试使用 H2 隔离本地数据库差异。
@@ -53,6 +53,10 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 下一开发切片是 M1.3：在聊天中确认 SkillDraft，幂等创建 Skill 与首个 SkillVersion。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
 - 新版前端工作台已经按 `docs/DESIGN_SYSTEM.md` 重构，对话、学习和动态共用导航、字体、图标及响应式规则。
+- M1.3 已实现 SkillDraft 幂等确认、Skill/SkillVersion 落库，以及 Skill 暂停、恢复和修改 API；聊天页可以完成确认。
+- 学习页已接入真实文件夹与文档 CRUD，可创建文章、笔记和行动清单并在刷新后恢复。
+- 动态页已改为读取真实 `pulse_item` 数据；在 M2 可靠来源链路完成前保持可信空状态，不再展示样例核验数据。
+- 根目录 `.env` 是本地 DeepSeek 与数据库配置入口，文件被 Git 忽略。
 
 ## 新窗口建议提示词
 

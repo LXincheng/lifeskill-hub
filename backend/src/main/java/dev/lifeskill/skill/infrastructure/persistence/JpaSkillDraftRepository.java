@@ -2,6 +2,7 @@ package dev.lifeskill.skill.infrastructure.persistence;
 
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
@@ -31,6 +32,16 @@ class JpaSkillDraftRepository implements SkillDraftRepository {
                 .toList();
     }
 
+    @Override
+    public Optional<SkillDraft> findByIdForUpdate(UUID draftId) {
+        return repository.findByIdForUpdate(draftId).map(this::toDomain);
+    }
+
+    @Override
+    public Optional<SkillDraft> findByConfirmationKey(String confirmationKey) {
+        return repository.findByConfirmationKey(confirmationKey).map(this::toDomain);
+    }
+
     private SkillDraftEntity toEntity(SkillDraft draft) {
         return new SkillDraftEntity(
                 draft.id(),
@@ -43,6 +54,9 @@ class JpaSkillDraftRepository implements SkillDraftRepository {
                 draft.schedule().timezone().getId(),
                 draft.status(),
                 draft.promptVersion(),
+                draft.confirmedSkillId(),
+                draft.confirmationKey(),
+                draft.confirmedAt(),
                 draft.createdAt(),
                 draft.updatedAt());
     }
@@ -60,6 +74,9 @@ class JpaSkillDraftRepository implements SkillDraftRepository {
                         ZoneId.of(entity.timezone())),
                 entity.status(),
                 entity.promptVersion(),
+                entity.confirmedSkillId(),
+                entity.confirmationKey(),
+                entity.confirmedAt(),
                 entity.createdAt(),
                 entity.updatedAt());
     }

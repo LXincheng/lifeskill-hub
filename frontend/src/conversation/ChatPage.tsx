@@ -100,15 +100,28 @@ export function ChatPage({ state }: ChatPageProps) {
                   <i className="skill-draft-accent" />
                   <header className="skill-draft-header">
                     <span className="skill-draft-icon"><Icon name="zap" size={16} /></span>
-                    <span><strong>{draft.title}</strong><small>Skill 草案 · 待你确认</small></span>
-                    <em>尚未创建</em>
+                    <span><strong>{draft.title}</strong><small>Skill 草案 · {draft.status === 'CONFIRMED' ? '已确认落库' : '待你确认'}</small></span>
+                    <em className={draft.status === 'CONFIRMED' ? 'confirmed' : ''}>
+                      {draft.status === 'CONFIRMED' ? '已创建' : '尚未创建'}
+                    </em>
                   </header>
                   <dl>
                     <div><dt>目标</dt><dd>{draft.objective}</dd></div>
                     <div><dt>频率</dt><dd>{formatSchedule(draft)}</dd></div>
-                    <div><dt>状态</dt><dd>等待用户确认</dd></div>
+                    <div><dt>状态</dt><dd>{draft.status === 'CONFIRMED' ? 'Skill 已启用' : '等待用户确认'}</dd></div>
                   </dl>
-                  <footer><Icon name="shield" size={15} />只有确认后，系统才会创建并运行这个 Skill</footer>
+                  {draft.status === 'PENDING_CONFIRMATION' ? (
+                    <div className="skill-draft-actions">
+                      <span><Icon name="shield" size={15} />确认后才会创建，不会重复落库</span>
+                      <button
+                        disabled={state.confirmingDraftId !== null}
+                        onClick={() => void state.confirmDraft(draft.id)}
+                        type="button"
+                      >{state.confirmingDraftId === draft.id ? '正在确认…' : '确认创建 Skill'}</button>
+                    </div>
+                  ) : (
+                    <footer className="confirmed"><Icon name="check-circle" size={15} />已创建 Skill · 版本 1 · 当前为启用状态</footer>
+                  )}
                 </article>
               ))}
             </div>

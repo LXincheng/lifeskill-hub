@@ -1,0 +1,89 @@
+package dev.lifeskill.learning.api;
+
+import java.net.URI;
+import java.util.List;
+import java.util.UUID;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import dev.lifeskill.learning.api.dto.ContentItemRequest;
+import dev.lifeskill.learning.api.dto.ContentItemResponse;
+import dev.lifeskill.learning.api.dto.LearningFolderRequest;
+import dev.lifeskill.learning.api.dto.LearningFolderResponse;
+import dev.lifeskill.learning.application.LearningApplicationService;
+import dev.lifeskill.learning.domain.ContentItemType;
+import jakarta.validation.Valid;
+
+@RestController
+@RequestMapping("/api")
+public class LearningController {
+    private final LearningApplicationService service;
+
+    public LearningController(LearningApplicationService service) {
+        this.service = service;
+    }
+
+    @GetMapping("/learning-folders")
+    public List<LearningFolderResponse> listFolders() {
+        return service.listFolders().stream().map(LearningFolderResponse::from).toList();
+    }
+
+    @PostMapping("/learning-folders")
+    public ResponseEntity<LearningFolderResponse> createFolder(@Valid @RequestBody LearningFolderRequest request) {
+        var response = LearningFolderResponse.from(service.createFolder(request.name(), request.description()));
+        return ResponseEntity.created(URI.create("/api/learning-folders/" + response.id())).body(response);
+    }
+
+    @PatchMapping("/learning-folders/{folderId}")
+    public LearningFolderResponse updateFolder(
+            @PathVariable UUID folderId,
+            @Valid @RequestBody LearningFolderRequest request) {
+        return LearningFolderResponse.from(service.updateFolder(folderId, request.name(), request.description()));
+    }
+
+    @DeleteMapping("/learning-folders/{folderId}")
+    public ResponseEntity<Void> deleteFolder(@PathVariable UUID folderId) {
+        service.deleteFolder(folderId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/learning-folders/{folderId}/content-items")
+    public List<ContentItemResponse> listContent(@PathVariable UUID folderId) {
+        return service.listContent(folderId).stream().map(ContentItemResponse::from).toList();
+    }
+
+    @PostMapping("/learning-folders/{folderId}/content-items")
+    public ResponseEntity<ContentItemResponse> createContent(
+            @PathVariable UUID folderId,
+            @Valid @RequestBody ContentItemRequest request) {
+        ContentItemType type = request.type() == null ? ContentItemType.ARTICLE : request.type();
+        var response = ContentItemResponse.from(service.createContent(folderId, type, request.title(), request.body()));
+        return ResponseEntity.created(URI.create("/api/content-items/" + response.id())).body(response);
+    }
+
+    @GetMapping("/content-items/{contentId}")
+    public ContentItemResponse getContent(@PathVariable UUID contentId) {
+        return ContentItemResponse.from(service.getContent(contentId));
+    }
+
+    @PatchMapping("/content-items/{contentId}")
+    public ContentItemResponse updateContent(
+            @PathVariable UUID contentId,
+            @Valid @RequestBody ContentItemRequest request) {
+        return ContentItemResponse.from(service.updateContent(contentId, request.type(), request.title(), request.body()));
+    }
+
+    @DeleteMapping("/content-items/{contentId}")
+    public ResponseEntity<Void> deleteContent(@PathVariable UUID contentId) {
+        service.deleteContent(contentId);
+        return ResponseEntity.noContent().build();
+    }
+}

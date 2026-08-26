@@ -1,5 +1,6 @@
 import {
   Activity,
+  AlertCircle,
   ArrowLeft,
   ArrowRight,
   BookOpen,
@@ -16,21 +17,26 @@ import {
   Folder,
   ListChecks,
   MessageSquare,
+  Pencil,
   Plus,
   RefreshCw,
   Rss,
   Search,
   Send,
+  Save,
   Settings,
   ShieldCheck,
   Sparkles,
   Target,
+  Trash2,
+  X,
   Zap,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 export type IconName =
   | 'activity'
+  | 'alert-circle'
   | 'arrow-left'
   | 'arrow-right'
   | 'book'
@@ -47,15 +53,19 @@ export type IconName =
   | 'folder'
   | 'list'
   | 'message'
+  | 'pencil'
   | 'plus'
   | 'refresh'
   | 'rss'
   | 'search'
   | 'send'
+  | 'save'
   | 'settings'
   | 'shield'
   | 'sparkles'
   | 'target'
+  | 'trash'
+  | 'x'
   | 'zap'
 
 type IconProps = {
@@ -66,6 +76,7 @@ type IconProps = {
 
 const icons: Record<IconName, LucideIcon> = {
   activity: Activity,
+  'alert-circle': AlertCircle,
   'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,
   book: BookOpen,
@@ -82,15 +93,19 @@ const icons: Record<IconName, LucideIcon> = {
   folder: Folder,
   list: ListChecks,
   message: MessageSquare,
+  pencil: Pencil,
   plus: Plus,
   refresh: RefreshCw,
   rss: Rss,
   search: Search,
   send: Send,
+  save: Save,
   settings: Settings,
   shield: ShieldCheck,
   sparkles: Sparkles,
   target: Target,
+  trash: Trash2,
+  x: X,
   zap: Zap,
 }
 

@@ -47,6 +47,8 @@ public record ConversationResponse(
             String time,
             String timezone,
             String status,
+            UUID confirmedSkillId,
+            Instant confirmedAt,
             Instant createdAt) {
 
         private static SkillDraftResponse from(SkillDraft draft) {
@@ -59,6 +61,8 @@ public record ConversationResponse(
                     draft.schedule().time().toString(),
                     draft.schedule().timezone().getId(),
                     draft.status().name(),
+                    draft.confirmedSkillId(),
+                    draft.confirmedAt(),
                     draft.createdAt());
         }
     }

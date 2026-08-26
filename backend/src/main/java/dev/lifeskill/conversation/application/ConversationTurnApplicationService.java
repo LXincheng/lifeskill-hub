@@ -106,6 +106,9 @@ public class ConversationTurnApplicationService {
                         ZoneId.of(requireText(proposal.timezone(), "Schedule timezone"))),
                 SkillDraftStatus.PENDING_CONFIRMATION,
                 decision.promptVersion(),
+                null,
+                null,
+                null,
                 now,
                 now));
     }

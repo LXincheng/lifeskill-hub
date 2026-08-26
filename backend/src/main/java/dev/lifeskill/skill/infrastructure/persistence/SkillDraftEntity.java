@@ -49,6 +49,15 @@ class SkillDraftEntity {
     @Column(name = "prompt_version", nullable = false, length = 40)
     private String promptVersion;
 
+    @Column(name = "confirmed_skill_id")
+    private UUID confirmedSkillId;
+
+    @Column(name = "confirmation_key", unique = true, length = 120)
+    private String confirmationKey;
+
+    @Column(name = "confirmed_at")
+    private Instant confirmedAt;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -69,6 +78,9 @@ class SkillDraftEntity {
             String timezone,
             SkillDraftStatus status,
             String promptVersion,
+            UUID confirmedSkillId,
+            String confirmationKey,
+            Instant confirmedAt,
             Instant createdAt,
             Instant updatedAt) {
         this.id = id;
@@ -81,6 +93,9 @@ class SkillDraftEntity {
         this.timezone = timezone;
         this.status = status;
         this.promptVersion = promptVersion;
+        this.confirmedSkillId = confirmedSkillId;
+        this.confirmationKey = confirmationKey;
+        this.confirmedAt = confirmedAt;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -95,6 +110,9 @@ class SkillDraftEntity {
     String timezone() { return timezone; }
     SkillDraftStatus status() { return status; }
     String promptVersion() { return promptVersion; }
+    UUID confirmedSkillId() { return confirmedSkillId; }
+    String confirmationKey() { return confirmationKey; }
+    Instant confirmedAt() { return confirmedAt; }
     Instant createdAt() { return createdAt; }
     Instant updatedAt() { return updatedAt; }
 }

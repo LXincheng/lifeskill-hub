@@ -77,15 +77,23 @@ npm run dev
 
 ## 环境变量
 
-复制 `.env.example` 并按需配置：
+仓库根目录已经预留本地 `.env`（Git 会忽略它）。如需重新创建，可复制 `.env.example`。填写：
 
 - `DEEPSEEK_API_KEY`：DeepSeek API Key
-- `LIFESKILL_MODEL_ENABLED`：设置为 `true` 后启用 DeepSeek；默认关闭并使用安全降级
+- `LIFESKILL_MODEL_ENABLED`：填写 Key 后改为 `true` 才会启用 DeepSeek；默认关闭并使用安全降级
 - `DB_URL`：JDBC 数据库地址
 - `DB_USERNAME`：数据库用户名
 - `DB_PASSWORD`：数据库密码
 
 不要提交真实密钥。
+
+启用真实对话前还需要：
+
+1. 安装并启动 Docker Desktop，然后在仓库根目录执行 `docker compose up -d postgres`。
+2. 在根目录 `.env` 中填写 `DEEPSEEK_API_KEY`，并设置 `LIFESKILL_MODEL_ENABLED=true`。
+3. 分别启动后端和前端。后端会自动读取根目录 `.env`，Flyway 会自动创建或升级 PostgreSQL 表。
+
+不填写 Key 时，对话和数据 CRUD 仍可运行，但模型会安全降级，不会生成真实 AI 回答或 Skill 草案。
 
 ## 开始开发前
 
