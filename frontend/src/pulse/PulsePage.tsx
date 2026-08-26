@@ -14,6 +14,13 @@ function formatTime(value: string) {
     .format(new Date(value))
 }
 
+const accentTones = ['blue', 'purple', 'orange', 'green'] as const
+
+function categoryTone(category: string) {
+  const value = Array.from(category).reduce((total, character) => total + (character.codePointAt(0) ?? 0), 0)
+  return accentTones[value % accentTones.length]
+}
+
 export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
   const [items, setItems] = useState<PulseItem[]>([])
   const [activeTab, setActiveTab] = useState('全部')
@@ -43,7 +50,7 @@ export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
           <div><h1>动态</h1><p>这里只展示由真实 Skill 运行产生并通过核验策略的内容。</p></div>
           <span className="pulse-count">{visibleItems.length} 条内容</span>
         </div>
-        <div className="pulse-tabs">
+        <div className="pulse-segmented" role="tablist" aria-label="动态分类">
           {tabs.map((tab) => <button className={activeTab === tab ? 'active' : ''} key={tab} onClick={() => setActiveTab(tab)}>{tab}</button>)}
         </div>
       </header>
@@ -57,7 +64,7 @@ export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
           <div className="pulse-grid">
             {visibleItems.map((item) => (
               <article className="pulse-card" key={item.id}>
-                <i className="pulse-accent" />
+                <i className={`pulse-accent ${categoryTone(item.category)}`} />
                 <div className="pulse-card-body">
                   <div className="pulse-meta"><span>{item.category}</span><i>·</i><span className="credibility"><Icon name="shield" size={12} />{item.verificationStatus}</span><i>·</i><span>{formatTime(item.publishedAt)}</span></div>
                   <h2>{item.title}</h2><p>{item.summary}</p>

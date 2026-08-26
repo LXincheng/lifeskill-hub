@@ -6,7 +6,7 @@ export type LearningFolder = {
   updatedAt: string
 }
 
-export type ContentItemType = 'ARTICLE' | 'NOTE' | 'CHECKLIST'
+export type ContentItemType = 'LEARNING_PATH' | 'ARTICLE' | 'NOTE' | 'QUIZ' | 'CHECKLIST'
 
 export type ContentItem = {
   id: string

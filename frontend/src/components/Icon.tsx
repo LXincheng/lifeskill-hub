@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  BrainCircuit,
   Bookmark,
   Check,
   CheckCircle2,
@@ -13,20 +14,24 @@ import {
   Code2,
   ExternalLink,
   FileText,
+  FileQuestion,
   Filter,
   Folder,
+  Globe2,
   ListChecks,
   MessageSquare,
   Pencil,
   Plus,
   RefreshCw,
   Rss,
+  Route,
   Search,
   Send,
   Save,
   Settings,
   ShieldCheck,
   Sparkles,
+  StickyNote,
   Target,
   Trash2,
   X,
@@ -40,6 +45,7 @@ export type IconName =
   | 'arrow-left'
   | 'arrow-right'
   | 'book'
+  | 'brain'
   | 'bookmark'
   | 'check'
   | 'check-circle'
@@ -49,20 +55,24 @@ export type IconName =
   | 'code'
   | 'external-link'
   | 'file'
+  | 'file-question'
   | 'filter'
   | 'folder'
+  | 'globe'
   | 'list'
   | 'message'
   | 'pencil'
   | 'plus'
   | 'refresh'
   | 'rss'
+  | 'route'
   | 'search'
   | 'send'
   | 'save'
   | 'settings'
   | 'shield'
   | 'sparkles'
+  | 'note'
   | 'target'
   | 'trash'
   | 'x'
@@ -80,6 +90,7 @@ const icons: Record<IconName, LucideIcon> = {
   'arrow-left': ArrowLeft,
   'arrow-right': ArrowRight,
   book: BookOpen,
+  brain: BrainCircuit,
   bookmark: Bookmark,
   check: Check,
   'check-circle': CheckCircle2,
@@ -89,20 +100,24 @@ const icons: Record<IconName, LucideIcon> = {
   code: Code2,
   'external-link': ExternalLink,
   file: FileText,
+  'file-question': FileQuestion,
   filter: Filter,
   folder: Folder,
+  globe: Globe2,
   list: ListChecks,
   message: MessageSquare,
   pencil: Pencil,
   plus: Plus,
   refresh: RefreshCw,
   rss: Rss,
+  route: Route,
   search: Search,
   send: Send,
   save: Save,
   settings: Settings,
   shield: ShieldCheck,
   sparkles: Sparkles,
+  note: StickyNote,
   target: Target,
   trash: Trash2,
   x: X,

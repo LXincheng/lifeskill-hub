@@ -48,6 +48,18 @@ class LearningApiIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].title").value("Harness 边界"));
 
+        mockMvc.perform(post("/api/learning-folders/{folderId}/content-items", folderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"QUIZ\",\"title\":\"Agent 边界测验\",\"body\":\"谁负责最终写入？\\n- 模型\\n- Java Harness\\n答案: 2\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("QUIZ"));
+
+        mockMvc.perform(post("/api/learning-folders/{folderId}/content-items", folderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"LEARNING_PATH\",\"title\":\"Agent 学习路径\",\"body\":\"[x] 理解模型边界\\n[ ] 实现 Harness\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("LEARNING_PATH"));
+
         mockMvc.perform(patch("/api/content-items/{contentId}", contentId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"title\":\"Harness 的控制边界\",\"body\":\"更新后的正文。\"}"))

@@ -13,7 +13,7 @@ type PrimaryNavigationProps = {
 const navigationItems: Array<{ id: PrimaryView; label: string; icon: IconName }> = [
   { id: 'chat', label: '对话', icon: 'message' },
   { id: 'learning', label: '学习', icon: 'book' },
-  { id: 'pulse', label: '动态', icon: 'rss' },
+  { id: 'pulse', label: '动态', icon: 'globe' },
 ]
 
 export function PrimaryNavigation({
@@ -50,9 +50,7 @@ export function PrimaryNavigation({
             </button>
           ))}
         </nav>
-        <div className="sidebar-footer">
-          <div className="profile-avatar" title="本地空间">L</div>
-        </div>
+        <div className="sidebar-footer" aria-label="本地工作区"><span className="workspace-status" /></div>
       </aside>
 
       <nav className="mobile-navigation" aria-label="主导航">

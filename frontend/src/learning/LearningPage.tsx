@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 
 import { Icon } from '../components/Icon'
@@ -7,17 +7,14 @@ import {
   listContent, listFolders, updateContent, updateFolder,
 } from './learningApi'
 import type { ContentItem, ContentItemType, LearningFolder } from './learningApi'
+import { LearningContentViewer, contentTypeConfig, contentTypeOrder } from './LearningContentViews'
 
 type EditorState =
   | { kind: 'folder'; target: LearningFolder | null }
   | { kind: 'content'; target: ContentItem | null }
   | null
 
-const typeLabels: Record<ContentItemType, string> = {
-  ARTICLE: '文章',
-  NOTE: '笔记',
-  CHECKLIST: '清单',
-}
+type MobileLevel = 'folders' | 'files' | 'content'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -29,6 +26,7 @@ export function LearningPage() {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   const [items, setItems] = useState<ContentItem[]>([])
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null)
+  const [mobileLevel, setMobileLevel] = useState<MobileLevel>('folders')
   const [editor, setEditor] = useState<EditorState>(null)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -37,6 +35,9 @@ export function LearningPage() {
 
   const selectedFolder = folders.find((folder) => folder.id === selectedFolderId) ?? null
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null
+  const groupedItems = useMemo(() => contentTypeOrder
+    .map((type) => ({ type, items: items.filter((item) => item.type === type) }))
+    .filter((group) => group.items.length > 0), [items])
 
   const loadFolders = useCallback(async () => {
     try {
@@ -70,6 +71,34 @@ export function LearningPage() {
     else { setItems([]); setSelectedItemId(null) }
   }, [loadItems, selectedFolderId])
 
+  function handleSelectFolder(folderId: string) {
+    setSelectedFolderId(folderId)
+    setSelectedItemId(null)
+    setEditor(null)
+    setDeleteTarget(null)
+    setMobileLevel('files')
+  }
+
+  function handleSelectItem(itemId: string) {
+    setSelectedItemId(itemId)
+    setEditor(null)
+    setDeleteTarget(null)
+    setMobileLevel('content')
+  }
+
+  function handleOpenEditor(nextEditor: Exclude<EditorState, null>) {
+    setEditor(nextEditor)
+    setDeleteTarget(null)
+    setMobileLevel('content')
+  }
+
+  function handleCloseEditor() {
+    const closingKind = editor?.kind
+    setEditor(null)
+    setDeleteTarget(null)
+    setMobileLevel(closingKind === 'folder' ? 'folders' : selectedItem ? 'content' : 'files')
+  }
+
   async function handleSaveFolder(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const form = new FormData(event.currentTarget)
@@ -82,6 +111,7 @@ export function LearningPage() {
       await loadFolders()
       setSelectedFolderId(saved.id)
       setEditor(null)
+      setMobileLevel('files')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '文件夹保存失败。')
     } finally { setIsSaving(false) }
@@ -104,8 +134,9 @@ export function LearningPage() {
       await loadItems(selectedFolderId)
       setSelectedItemId(saved.id)
       setEditor(null)
+      setMobileLevel('content')
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '文档保存失败。')
+      setError(cause instanceof Error ? cause.message : '内容保存失败。')
     } finally { setIsSaving(false) }
   }
 
@@ -116,6 +147,7 @@ export function LearningPage() {
       await deleteFolder(folderId)
       setDeleteTarget(null)
       setEditor(null)
+      setMobileLevel('folders')
       await loadFolders()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '文件夹删除失败。')
@@ -130,129 +162,137 @@ export function LearningPage() {
       await deleteContent(contentId)
       setDeleteTarget(null)
       setEditor(null)
+      setMobileLevel('files')
       await loadItems(selectedFolderId)
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '文档删除失败。')
+      setError(cause instanceof Error ? cause.message : '内容删除失败。')
     } finally { setIsSaving(false) }
   }
 
   return (
-    <section className="learning-view">
-      <aside className="learning-sidebar">
-        <div className="section-label">
-          <span>学习库</span>
-          <button aria-label="创建文件夹" onClick={() => setEditor({ kind: 'folder', target: null })}><Icon name="plus" size={15} /></button>
-        </div>
+    <section className={`learning-view mobile-${mobileLevel}`}>
+      <aside className="learning-pane folder-pane">
+        <header className="pane-header">
+          <div><small>学习</small><strong>学习库</strong></div>
+          <button aria-label="创建文件夹" className="icon-button" onClick={() => handleOpenEditor({ kind: 'folder', target: null })}><Icon name="plus" size={18} /></button>
+        </header>
         <div className="folder-list">
           {folders.map((folder) => (
-            <button className={selectedFolderId === folder.id ? 'active' : ''} key={folder.id} onClick={() => { setSelectedFolderId(folder.id); setEditor(null) }}>
-              <Icon name="chevron-right" size={14} />
-              <span className="folder-icon"><Icon name="folder" size={16} /></span>
-              <strong>{folder.name}</strong>
-              <small>{selectedFolderId === folder.id ? items.length : ''}</small>
-            </button>
+            <div className={selectedFolderId === folder.id ? 'folder-row active' : 'folder-row'} key={folder.id}>
+              <button className="folder-select" onClick={() => handleSelectFolder(folder.id)}>
+                <span className="folder-icon"><Icon name="folder" size={17} /></span>
+                <span><strong>{folder.name}</strong><small>{folder.description || '未填写说明'}</small></span>
+                <Icon name="chevron-right" size={16} />
+              </button>
+            </div>
           ))}
         </div>
         {!isLoading && folders.length === 0 && (
-          <button className="learning-sidebar-empty" onClick={() => setEditor({ kind: 'folder', target: null })}>
-            <Icon name="folder" size={18} /><span>创建第一个文件夹</span>
+          <button className="pane-empty-action" onClick={() => handleOpenEditor({ kind: 'folder', target: null })}>
+            <Icon name="folder" size={20} /><strong>创建第一个文件夹</strong><span>按主题整理长期学习内容</span>
           </button>
         )}
       </aside>
 
-      <div className="learning-main">
-        {error && <div className="page-error"><Icon name="alert-circle" size={16} /><span>{error}</span><button onClick={() => { setError(null); void loadFolders() }}>重试</button></div>}
+      <section className="learning-pane file-pane">
+        <MobileBack label="学习库" onClick={() => setMobileLevel('folders')} />
+        <header className="pane-header file-pane-header">
+          <div><small>文件夹</small><strong>{selectedFolder?.name ?? '选择文件夹'}</strong></div>
+          {selectedFolder && <button aria-label="新建内容" className="icon-button primary" onClick={() => handleOpenEditor({ kind: 'content', target: null })}><Icon name="plus" size={18} /></button>}
+        </header>
+
+        {selectedFolder && (
+          <div className="folder-summary">
+            <p>{selectedFolder.description || '用于沉淀可复习、可继续编辑的学习内容。'}</p>
+            <button onClick={() => handleOpenEditor({ kind: 'folder', target: selectedFolder })}><Icon name="pencil" size={14} />编辑文件夹</button>
+          </div>
+        )}
+
+        <div className="grouped-file-list">
+          {groupedItems.map((group) => (
+            <section key={group.type}>
+              <h2>{contentTypeConfig[group.type].group}</h2>
+              <div className="file-group-card">
+                {group.items.map((item) => {
+                  const config = contentTypeConfig[item.type]
+                  return (
+                    <button className={selectedItemId === item.id ? 'file-row active' : 'file-row'} key={item.id} onClick={() => handleSelectItem(item.id)}>
+                      <span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span>
+                      <span><strong>{item.title}</strong><small>{config.label} · {formatDate(item.updatedAt)}</small></span>
+                      <Icon name="chevron-right" size={16} />
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          ))}
+        </div>
+
+        {!isLoading && selectedFolder && items.length === 0 && (
+          <button className="pane-empty-action compact" onClick={() => handleOpenEditor({ kind: 'content', target: null })}>
+            <Icon name="file" size={20} /><strong>新建第一份内容</strong><span>支持路径、文章、测验与清单</span>
+          </button>
+        )}
+      </section>
+
+      <main className="learning-pane content-pane">
+        {error && <div className="page-error"><Icon name="alert-circle" size={17} /><span>{error}</span><button onClick={() => { setError(null); void loadFolders() }}>重试</button></div>}
         {isLoading ? (
           <div className="page-state">正在读取学习库…</div>
         ) : editor?.kind === 'folder' ? (
-          <EditorShell title={editor.target ? '编辑文件夹' : '新建文件夹'} onClose={() => setEditor(null)}>
+          <EditorShell backLabel="学习库" title={editor.target ? '编辑文件夹' : '新建文件夹'} onClose={handleCloseEditor}>
             <form className="resource-form" onSubmit={handleSaveFolder}>
               <label>文件夹名称<input autoFocus defaultValue={editor.target?.name} maxLength={160} name="name" required /></label>
               <label>用途说明<textarea defaultValue={editor.target?.description} maxLength={1000} name="description" rows={4} placeholder="这个文件夹准备沉淀什么内容？" /></label>
               <div className="resource-form-actions">
-                {editor.target && <button className="danger-quiet" disabled={isSaving} onClick={() => void handleDeleteFolder(editor.target!.id)} type="button"><Icon name="trash" size={15} />{deleteTarget === `folder:${editor.target.id}` ? '再次点击确认删除' : '删除文件夹'}</button>}
+                {editor.target && <button className="danger-quiet" disabled={isSaving} onClick={() => void handleDeleteFolder(editor.target!.id)} type="button"><Icon name="trash" size={16} />{deleteTarget === `folder:${editor.target.id}` ? '再次点击确认删除' : '删除文件夹'}</button>}
                 <span />
-                <button className="secondary-button" onClick={() => setEditor(null)} type="button">取消</button>
-                <button className="primary-button" disabled={isSaving} type="submit"><Icon name="save" size={15} />{isSaving ? '保存中…' : '保存'}</button>
+                <button className="secondary-button" onClick={handleCloseEditor} type="button">取消</button>
+                <button className="primary-button" disabled={isSaving} type="submit"><Icon name="save" size={16} />{isSaving ? '保存中…' : '保存'}</button>
               </div>
             </form>
           </EditorShell>
-        ) : !selectedFolder ? (
-          <div className="learning-welcome">
-            <span><Icon name="book" size={22} /></span>
-            <h1>建立你的学习空间</h1>
-            <p>先创建一个主题文件夹，再把聊天结论、文章、笔记和行动清单沉淀进来。</p>
-            <button className="primary-button" onClick={() => setEditor({ kind: 'folder', target: null })}><Icon name="plus" size={16} />创建文件夹</button>
-          </div>
         ) : editor?.kind === 'content' ? (
-          <EditorShell title={editor.target ? '编辑文档' : '新建文档'} onClose={() => setEditor(null)}>
+          <EditorShell backLabel={selectedFolder?.name ?? '文件列表'} title={editor.target ? '编辑内容' : '新建内容'} onClose={handleCloseEditor}>
             <form className="resource-form" onSubmit={handleSaveContent}>
-              <label>内容类型<select defaultValue={editor.target?.type ?? 'ARTICLE'} name="type"><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="CHECKLIST">行动清单</option></select></label>
+              <label>内容类型<select defaultValue={editor.target?.type ?? 'ARTICLE'} name="type"><option value="LEARNING_PATH">学习路径</option><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="QUIZ">测验</option><option value="CHECKLIST">行动清单</option></select></label>
               <label>标题<input autoFocus defaultValue={editor.target?.title} maxLength={240} name="title" required /></label>
               <label>正文<textarea className="document-textarea" defaultValue={editor.target?.body} maxLength={20000} name="body" rows={14} required /></label>
+              <p className="editor-help">路径和清单每行写一步，可用 [x] 标记完成；测验使用“题目、- 选项、答案: 1”，多题用 --- 分隔；文章中的 ``` 代码块会单独排版。</p>
               <div className="resource-form-actions">
-                {editor.target && <button className="danger-quiet" disabled={isSaving} onClick={() => void handleDeleteContent(editor.target!.id)} type="button"><Icon name="trash" size={15} />{deleteTarget === `content:${editor.target.id}` ? '再次点击确认删除' : '删除文档'}</button>}
+                {editor.target && <button className="danger-quiet" disabled={isSaving} onClick={() => void handleDeleteContent(editor.target!.id)} type="button"><Icon name="trash" size={16} />{deleteTarget === `content:${editor.target.id}` ? '再次点击确认删除' : '删除内容'}</button>}
                 <span />
-                <button className="secondary-button" onClick={() => setEditor(null)} type="button">取消</button>
-                <button className="primary-button" disabled={isSaving} type="submit"><Icon name="save" size={15} />{isSaving ? '保存中…' : '保存'}</button>
+                <button className="secondary-button" onClick={handleCloseEditor} type="button">取消</button>
+                <button className="primary-button" disabled={isSaving} type="submit"><Icon name="save" size={16} />{isSaving ? '保存中…' : '保存'}</button>
               </div>
             </form>
           </EditorShell>
+        ) : selectedItem ? (
+          <>
+            <MobileBack label={selectedFolder?.name ?? '文件列表'} onClick={() => setMobileLevel('files')} />
+            <LearningContentViewer item={selectedItem} onEdit={() => handleOpenEditor({ kind: 'content', target: selectedItem })} />
+          </>
         ) : (
-          <div className="learning-content">
-            <div className="breadcrumb"><span>学习库</span><Icon name="chevron-right" size={12} /><strong>{selectedFolder.name}</strong></div>
-            <header className="learning-title-block resource-heading">
-              <div><span className="type-badge"><Icon name="folder" size={13} />学习文件夹</span><small>{items.length} 篇内容</small></div>
-              <div className="resource-title-row">
-                <span><h1>{selectedFolder.name}</h1><p>{selectedFolder.description || '用于沉淀可复习、可继续编辑的学习内容。'}</p></span>
-                <span className="resource-actions">
-                  <button aria-label="编辑文件夹" onClick={() => setEditor({ kind: 'folder', target: selectedFolder })}><Icon name="pencil" size={16} /></button>
-                  <button className="primary-icon-button" aria-label="新建文档" onClick={() => setEditor({ kind: 'content', target: null })}><Icon name="plus" size={17} /></button>
-                </span>
-              </div>
-            </header>
-
-            {items.length === 0 ? (
-              <div className="content-empty">
-                <span><Icon name="file" size={21} /></span>
-                <strong>这个文件夹还是空的</strong>
-                <p>创建文章、笔记或行动清单，内容会通过 API 保存并可在刷新后恢复。</p>
-                <button className="primary-button" onClick={() => setEditor({ kind: 'content', target: null })}><Icon name="plus" size={15} />新建文档</button>
-              </div>
-            ) : (
-              <div className="learning-document-layout">
-                <div className="document-list">
-                  {items.map((item) => (
-                    <button className={selectedItemId === item.id ? 'active' : ''} key={item.id} onClick={() => setSelectedItemId(item.id)}>
-                      <span className="document-icon"><Icon name={item.type === 'CHECKLIST' ? 'list' : 'file'} size={16} /></span>
-                      <span><small>{typeLabels[item.type]} · {formatDate(item.updatedAt)}</small><strong>{item.title}</strong></span>
-                      <Icon name="chevron-right" size={15} />
-                    </button>
-                  ))}
-                </div>
-                {selectedItem && (
-                  <article className="document-reader">
-                    <header>
-                      <div><span>{typeLabels[selectedItem.type]}</span><small>更新于 {formatDate(selectedItem.updatedAt)}</small></div>
-                      <button aria-label="编辑文档" onClick={() => setEditor({ kind: 'content', target: selectedItem })}><Icon name="pencil" size={15} />编辑</button>
-                    </header>
-                    <h2>{selectedItem.title}</h2>
-                    <div className="document-body">{selectedItem.body}</div>
-                  </article>
-                )}
-              </div>
-            )}
+          <div className="content-placeholder">
+            <span><Icon name="book" size={24} /></span>
+            <strong>{selectedFolder ? '选择一份内容开始阅读' : '从左侧选择学习文件夹'}</strong>
+            <p>学习库采用“文件夹 → 文件 → 内容”三级结构，减少寻找入口的成本。</p>
           </div>
         )}
-      </div>
+      </main>
     </section>
   )
 }
 
-function EditorShell({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function MobileBack({ label, onClick }: { label: string; onClick: () => void }) {
+  return <button className="mobile-back" onClick={onClick}><Icon name="arrow-left" size={17} />{label}</button>
+}
+
+function EditorShell({ backLabel, title, onClose, children }: { backLabel: string; title: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="editor-shell">
-      <header><div><span>学习库</span><h1>{title}</h1></div><button aria-label="关闭" onClick={onClose}><Icon name="x" size={18} /></button></header>
+      <button className="editor-back" onClick={onClose}><Icon name="arrow-left" size={17} />{backLabel}</button>
+      <header><div><small>学习库</small><h1>{title}</h1></div><button aria-label="关闭" className="icon-button" onClick={onClose}><Icon name="x" size={18} /></button></header>
       {children}
     </div>
   )

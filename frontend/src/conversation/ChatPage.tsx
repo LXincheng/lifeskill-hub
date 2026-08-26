@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { Icon } from '../components/Icon'
@@ -10,10 +10,11 @@ type ChatPageProps = {
   state: ConversationState
 }
 
-const starterPrompts: Array<{ icon: IconName; label: string; prompt: string }> = [
-  { icon: 'activity', label: '建立持续关注', prompt: '每周五整理 Java Agent 前沿，并核对官方来源' },
-  { icon: 'book', label: '拆解学习目标', prompt: '帮我制定四周的 Spring AI 学习路线' },
-  { icon: 'target', label: '推进手头任务', prompt: '把一个模糊目标拆成今天能开始的步骤' },
+const starterPrompts: Array<{ icon: IconName; tone: string; label: string; description: string; prompt: string }> = [
+  { icon: 'route', tone: 'blue', label: '创建学习路径', description: '把目标拆成循序渐进的学习步骤', prompt: '为我创建一个 Java Agent 开发学习路径' },
+  { icon: 'globe', tone: 'green', label: '追踪信息动态', description: '持续关注主题，先生成可确认草案', prompt: '每周整理 Java Agent 前沿动态，关注 LangChain4j 和 Spring AI' },
+  { icon: 'search', tone: 'orange', label: '发起深度研究', description: '围绕一个问题整理可靠结论', prompt: '研究 RAG 与 Fine-tuning 的优劣，给我一份分析' },
+  { icon: 'zap', tone: 'purple', label: '快速提问', description: '直接讨论正在困扰你的问题', prompt: '' },
 ]
 
 const dayLabels: Record<string, string> = {
@@ -41,7 +42,16 @@ function formatDate(value?: string) {
 
 export function ChatPage({ state }: ChatPageProps) {
   const [input, setInput] = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
   const conversation = state.conversation
+  const pendingDraftCount = conversation?.skillDrafts.filter((draft) => draft.status === 'PENDING_CONFIRMATION').length ?? 0
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
+
+  function handleStarter(prompt: string) {
+    setInput(prompt)
+    requestAnimationFrame(() => inputRef.current?.focus())
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -66,19 +76,27 @@ export function ChatPage({ state }: ChatPageProps) {
 
           {!state.isLoading && conversation?.messages.length === 0 && (
             <div className="chat-empty">
-              <span className="chat-eyebrow"><Icon name="sparkles" size={16} />对话，是所有能力的起点</span>
-              <h1>今天，想推进什么？</h1>
-              <p>描述一个目标、任务或持续兴趣。LifeSkill 会保存上下文，再把它逐步转成可执行、可确认的能力。</p>
+              <header className="chat-greeting">
+                <span>{formatDate()}</span>
+                <h1>{greeting}，今天想推进什么？</h1>
+                <p>可以直接提问，也可以从下面选择一个明确入口。</p>
+              </header>
+
+              <div className="chat-stats" aria-label="当前会话状态">
+                <div><strong>{conversation.messages.length}</strong><span>条消息</span></div>
+                <div><strong>{pendingDraftCount}</strong><span>个待确认草案</span></div>
+                <div><strong className={state.error ? 'danger' : 'success'}>{state.error ? '异常' : '已同步'}</strong><span>本地工作区</span></div>
+              </div>
+
               <div className="starter-grid">
                 {starterPrompts.map((starter) => (
-                  <button key={starter.label} type="button" onClick={() => setInput(starter.prompt)}>
-                    <span className="starter-icon"><Icon name={starter.icon} size={19} /></span>
-                    <span><strong>{starter.label}</strong><small>{starter.prompt}</small></span>
+                  <button key={starter.label} type="button" onClick={() => handleStarter(starter.prompt)}>
+                    <span className={`starter-icon ${starter.tone}`}><Icon name={starter.icon} size={20} /></span>
+                    <span><strong>{starter.label}</strong><small>{starter.description}</small></span>
                     <Icon name="arrow-right" size={17} />
                   </button>
                 ))}
               </div>
-              <span className="trust-note"><Icon name="shield" size={15} />对话自动保存，长期任务创建前会先请你确认</span>
             </div>
           )}
 
@@ -143,6 +161,7 @@ export function ChatPage({ state }: ChatPageProps) {
             onChange={(event) => setInput(event.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="描述你的学习目标、研究任务或信息需求……"
+            ref={inputRef}
             rows={1}
             value={input}
           />
