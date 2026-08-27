@@ -7,5 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 interface SpringDataContentItemRepository extends JpaRepository<ContentItemEntity, UUID> {
     List<ContentItemEntity> findAllByFolderIdOrderByUpdatedAtDesc(UUID folderId);
+    List<ContentItemEntity> findAllBySourceSkillRunIdOrderByUpdatedAtAsc(UUID sourceSkillRunId);
     void deleteAllByFolderId(UUID folderId);
 }

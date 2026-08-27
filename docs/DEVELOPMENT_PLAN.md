@@ -48,19 +48,21 @@
 
 ## M2：第一个可靠来源与动态
 
-- [ ] `AgentRun` 状态机、最大步骤、超时、失败摘要和可审计步骤
-- [ ] 手动运行已确认 Skill，并在聊天中流式展示真实运行事件
-- [ ] Spring AI 官方文档、GitHub Release 或官方 RSS 的首个只读 Source Adapter
-- [ ] Evidence 规范化、去重、内容哈希和持久化
-- [ ] Researcher 生成引用 Evidence ID 的 Claim
-- [ ] Verifier 独立核验与确定性 Policy Gate
-- [ ] 无 Evidence、来源失效或核验失败时阻止发布
-- [ ] 动态页真实列表、核验状态、来源数量和证据详情
-- [ ] 从可靠动态生成学习文件夹、学习路径、文章和测验
-- [ ] 暂停/恢复 Skill 与查看最近运行结果的前端入口
-- [ ] 最小可靠定时运行；手动运行稳定前不启用后台调度
+- [x] `AgentRun` 状态机、最大步骤、超时、失败摘要和可审计步骤
+- [x] 手动运行已确认 Skill，并用 SSE 流式展示真实运行事件
+- [x] Spring AI GitHub Release 首个只读 Source Adapter
+- [x] Evidence 规范化、去重、内容哈希和持久化
+- [x] Researcher 生成引用 Evidence ID 的 Claim
+- [x] Verifier 独立核验与确定性 Policy Gate
+- [x] 无 Evidence、来源失效或核验失败时阻止发布
+- [x] 动态页真实列表、核验状态、来源数量和证据详情
+- [x] 从可靠动态生成学习文件夹、学习路径、文章和测验
+- [x] 暂停/恢复 Skill、修改频率与查看最近运行结果的前端入口
+- [x] 最小可靠每周调度；数据库时隙唯一键阻止重复触发
 
 验收：手动运行 `Java Agent Weekly` 后，一条动态可追溯到原始官方来源，并能生成学习内容；无 Evidence 的 Claim 被测试拦截，失败过程可恢复或重试。
+
+完成记录（2026-08-27）：已使用真实 PostgreSQL、DeepSeek 和 Spring AI 官方 GitHub Release 完成验收。学习生成按 `source_skill_run_id + type` 幂等，刷新后从数据库恢复。
 
 ## M3：学习进度与复习
 

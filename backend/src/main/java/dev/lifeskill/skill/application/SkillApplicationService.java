@@ -6,6 +6,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +35,11 @@ public class SkillApplicationService {
     public SkillDetails get(UUID skillId) {
         Skill skill = findSkill(skillId);
         return new SkillDetails(skill, findVersion(skill));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SkillDetails> list() {
+        return repository.findAll().stream().map(skill -> new SkillDetails(skill, findVersion(skill))).toList();
     }
 
     @Transactional

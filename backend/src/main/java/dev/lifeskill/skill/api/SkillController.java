@@ -1,6 +1,7 @@
 package dev.lifeskill.skill.api;
 
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -27,6 +28,11 @@ public class SkillController {
     @GetMapping("/{skillId}")
     public SkillResponse get(@PathVariable UUID skillId) {
         return SkillResponse.from(service.get(skillId));
+    }
+
+    @GetMapping
+    public List<SkillResponse> list() {
+        return service.list().stream().map(SkillResponse::from).toList();
     }
 
     @PatchMapping("/{skillId}")

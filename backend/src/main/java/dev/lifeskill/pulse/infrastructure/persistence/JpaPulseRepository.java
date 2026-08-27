@@ -1,6 +1,8 @@
 package dev.lifeskill.pulse.infrastructure.persistence;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.stereotype.Repository;
 
@@ -19,8 +21,26 @@ class JpaPulseRepository implements PulseRepository {
     public List<PulseItem> findPublished() {
         return repository.findAllByOrderByPublishedAtDesc().stream()
                 .map(entity -> new PulseItem(
-                        entity.id(), entity.category(), entity.title(), entity.summary(),
-                        entity.verificationStatus(), entity.publishedAt(), entity.readAt()))
+                        entity.id(), entity.skillRunId(), entity.primaryClaimId(), entity.category(), entity.title(), entity.summary(),
+                        entity.verificationStatus(), entity.sourceCount(), entity.recommendationReason(), entity.publishedAt(), entity.readAt()))
                 .toList();
+    }
+
+    @Override
+    public Optional<PulseItem> findById(UUID pulseId) {
+        return repository.findById(pulseId).map(this::toDomain);
+    }
+
+    @Override
+    public PulseItem save(PulseItem item) {
+        return toDomain(repository.save(new PulseItemEntity(
+                item.id(), item.skillRunId(), item.primaryClaimId(), item.category(), item.title(), item.summary(),
+                item.verificationStatus(), item.sourceCount(), item.recommendationReason(), item.publishedAt(), item.readAt())));
+    }
+
+    private PulseItem toDomain(PulseItemEntity entity) {
+        return new PulseItem(
+                entity.id(), entity.skillRunId(), entity.primaryClaimId(), entity.category(), entity.title(), entity.summary(),
+                entity.verificationStatus(), entity.sourceCount(), entity.recommendationReason(), entity.publishedAt(), entity.readAt());
     }
 }

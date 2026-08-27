@@ -7,11 +7,17 @@ import java.util.UUID;
 public record ContentItem(
         UUID id,
         UUID folderId,
+        UUID sourceSkillRunId,
         ContentItemType type,
         String title,
         String body,
+        String verificationStatus,
         Instant createdAt,
         Instant updatedAt) {
+
+    public ContentItem(UUID id, UUID folderId, ContentItemType type, String title, String body, Instant createdAt, Instant updatedAt) {
+        this(id, folderId, null, type, title, body, "USER_AUTHORED", createdAt, updatedAt);
+    }
 
     public ContentItem {
         Objects.requireNonNull(id, "Content item id is required");
@@ -19,6 +25,7 @@ public record ContentItem(
         Objects.requireNonNull(type, "Content item type is required");
         title = requireText(title, "Content item title", 240);
         body = requireText(body, "Content item body", 20_000);
+        Objects.requireNonNull(verificationStatus, "Content verification status is required");
         Objects.requireNonNull(createdAt, "Content item creation time is required");
         Objects.requireNonNull(updatedAt, "Content item update time is required");
     }
@@ -27,9 +34,11 @@ public record ContentItem(
         return new ContentItem(
                 id,
                 folderId,
+                sourceSkillRunId,
                 nextType == null ? type : nextType,
                 nextTitle == null ? title : nextTitle,
                 nextBody == null ? body : nextBody,
+                verificationStatus,
                 createdAt,
                 Objects.requireNonNull(changedAt, "Content item update time is required"));
     }

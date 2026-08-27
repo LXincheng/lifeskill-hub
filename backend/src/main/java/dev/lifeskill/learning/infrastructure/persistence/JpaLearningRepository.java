@@ -56,10 +56,16 @@ class JpaLearningRepository implements LearningRepository {
     }
 
     @Override
+    public List<ContentItem> findContentBySourceRun(UUID sourceRunId) {
+        return contentRepository.findAllBySourceSkillRunIdOrderByUpdatedAtAsc(sourceRunId).stream()
+                .map(this::toDomain).toList();
+    }
+
+    @Override
     public ContentItem saveContent(ContentItem content) {
         return toDomain(contentRepository.save(new ContentItemEntity(
-                content.id(), content.folderId(), content.type(), content.title(),
-                Map.of("body", content.body()), content.createdAt(), content.updatedAt())));
+                content.id(), content.folderId(), content.sourceSkillRunId(), content.type(), content.title(),
+                Map.of("body", content.body()), content.verificationStatus(), content.createdAt(), content.updatedAt())));
     }
 
     @Override
@@ -75,6 +81,7 @@ class JpaLearningRepository implements LearningRepository {
         Object body = entity.payload().get("body");
         if (!(body instanceof String text)) throw new IllegalStateException("Content item body is missing");
         return new ContentItem(
-                entity.id(), entity.folderId(), entity.type(), entity.title(), text, entity.createdAt(), entity.updatedAt());
+                entity.id(), entity.folderId(), entity.sourceSkillRunId(), entity.type(), entity.title(), text,
+                entity.verificationStatus(), entity.createdAt(), entity.updatedAt());
     }
 }

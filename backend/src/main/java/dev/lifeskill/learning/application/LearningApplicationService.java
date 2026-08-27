@@ -3,6 +3,7 @@ package dev.lifeskill.learning.application;
 import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +66,43 @@ public class LearningApplicationService {
         var now = clock.instant();
         return repository.saveContent(new ContentItem(idGenerator.nextId(), folderId, type, title, body, now, now));
     }
+
+    @Transactional
+    public GeneratedLearningBundle createVerifiedBundle(
+            UUID sourceRunId,
+            String folderName,
+            String folderDescription,
+            String pathTitle,
+            String pathBody,
+            String articleTitle,
+            String articleBody,
+            String quizTitle,
+            String quizBody) {
+        var now = clock.instant();
+        LearningFolder folder = repository.saveFolder(new LearningFolder(
+                idGenerator.nextId(), folderName, folderDescription, now, now));
+        List<ContentItem> items = List.of(
+                verifiedContent(folder.id(), sourceRunId, ContentItemType.LEARNING_PATH, pathTitle, pathBody, now),
+                verifiedContent(folder.id(), sourceRunId, ContentItemType.ARTICLE, articleTitle, articleBody, now),
+                verifiedContent(folder.id(), sourceRunId, ContentItemType.QUIZ, quizTitle, quizBody, now));
+        return new GeneratedLearningBundle(folder, items);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<GeneratedLearningBundle> findVerifiedBundle(UUID sourceRunId) {
+        List<ContentItem> items = repository.findContentBySourceRun(sourceRunId);
+        if (items.isEmpty()) return Optional.empty();
+        LearningFolder folder = requireFolder(items.getFirst().folderId());
+        return Optional.of(new GeneratedLearningBundle(folder, items));
+    }
+
+    private ContentItem verifiedContent(
+            UUID folderId, UUID sourceRunId, ContentItemType type, String title, String body, java.time.Instant now) {
+        return repository.saveContent(new ContentItem(
+                idGenerator.nextId(), folderId, sourceRunId, type, title, body, "VERIFIED", now, now));
+    }
+
+    public record GeneratedLearningBundle(LearningFolder folder, List<ContentItem> contentItems) {}
 
     @Transactional
     public ContentItem updateContent(UUID contentId, ContentItemType type, String title, String body) {

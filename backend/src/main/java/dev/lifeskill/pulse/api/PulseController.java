@@ -27,16 +27,19 @@ public class PulseController {
 
     public record PulseItemResponse(
             UUID id,
+            UUID skillRunId,
             String category,
             String title,
             String summary,
             String verificationStatus,
+            int sourceCount,
+            String recommendationReason,
             Instant publishedAt,
             Instant readAt) {
         static PulseItemResponse from(PulseItem item) {
             return new PulseItemResponse(
-                    item.id(), item.category(), item.title(), item.summary(),
-                    item.verificationStatus(), item.publishedAt(), item.readAt());
+                    item.id(), item.skillRunId(), item.category(), item.title(), item.summary(),
+                    item.verificationStatus(), item.sourceCount(), item.recommendationReason(), item.publishedAt(), item.readAt());
         }
     }
 }

@@ -2,7 +2,7 @@
 
 LifeSkill Hub 是一个以聊天为入口的个人能力中枢。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习卡片、文章、测验和实践。
 
-当前仓库已完成 M1.2 结构化 Skill 草案代码，正在沿下面的 MVP 闭环迭代：
+当前仓库已完成 M2 第一条可靠纵向闭环：聊天确认 `Java Agent Weekly` 后，可从 Spring AI 官方 Release 生成带 Evidence 的动态，并沉淀为学习路径、文章和测验。
 
 ```text
 聊天表达需求
@@ -59,11 +59,16 @@ cd backend
 
 后端默认运行在 `http://localhost:8080`，状态接口为 `GET /api/status`。
 
-当前对话 API：
+核心 API：
 
 - `POST /api/conversations`：创建对话
 - `POST /api/conversations/{id}/messages`：保存消息、识别意图并按需生成 Skill 草案
 - `GET /api/conversations/{id}`：读取对话历史和待确认 Skill 草案
+- `GET /api/skills`、`PATCH /api/skills/{id}`：管理、暂停、恢复和修改 Skill
+- `POST /api/skills/{id}/runs`：异步启动受控 AgentRun
+- `GET /api/skill-runs/{id}`、`GET /api/skill-runs/{id}/events`：读取结果和 SSE 事件
+- `GET /api/pulse-items`、`GET /api/pulse-items/{id}/evidence`：读取可靠动态和 Evidence
+- `POST /api/pulse-items/{id}/learning-folder`：幂等生成学习文件夹、路径、文章和测验
 
 ### 3. 前端
 

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { Icon } from '../components/Icon'
-import { listPulseItems } from './pulseApi'
-import type { PulseItem } from './pulseApi'
+import { m2Copy } from '../copy'
+import { generateLearning, getPulseEvidence, listPulseItems } from './pulseApi'
+import type { Evidence, PulseItem } from './pulseApi'
 
 type PulsePageProps = {
   onAsk: () => void
@@ -26,6 +27,10 @@ export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
   const [activeTab, setActiveTab] = useState('全部')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [evidence, setEvidence] = useState<Record<string, Evidence[]>>({})
+  const [busyId, setBusyId] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setIsLoading(true)
@@ -43,6 +48,28 @@ export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
   const tabs = ['全部', ...Array.from(new Set(items.map((item) => item.category)))]
   const visibleItems = activeTab === '全部' ? items : items.filter((item) => item.category === activeTab)
 
+  async function handleEvidence(item: PulseItem) {
+    if (expandedId === item.id) { setExpandedId(null); return }
+    setExpandedId(item.id)
+    if (evidence[item.id]) return
+    try {
+      const sources = await getPulseEvidence(item.id)
+      setEvidence((current) => ({ ...current, [item.id]: sources }))
+    }
+    catch (cause) { setError(cause instanceof Error ? cause.message : '证据详情加载失败。') }
+  }
+
+  async function handleLearning(item: PulseItem) {
+    setBusyId(item.id)
+    setNotice(null)
+    try {
+      await generateLearning(item.id)
+      setNotice(m2Copy.learningCreated)
+      onLearn()
+    } catch (cause) { setError(cause instanceof Error ? cause.message : '学习内容生成失败。') }
+    finally { setBusyId(null) }
+  }
+
   return (
     <section className="pulse-view">
       <header className="pulse-header">
@@ -56,20 +83,22 @@ export function PulsePage({ onAsk, onLearn }: PulsePageProps) {
       </header>
 
       <div className="pulse-content">
+        {notice && <div className="pulse-notice"><Icon name="check-circle" size={15} />{notice}</div>}
         {isLoading ? <div className="page-state">正在读取动态…</div> : error ? (
           <div className="pulse-empty error"><Icon name="alert-circle" size={22} /><strong>暂时无法读取动态</strong><p>{error}</p><button className="secondary-button" onClick={() => void load()}><Icon name="refresh" size={15} />重试</button></div>
         ) : visibleItems.length === 0 ? (
-          <div className="pulse-empty"><span><Icon name="rss" size={23} /></span><strong>还没有可靠动态</strong><p>确认一个 Skill 后，来源采集、证据核验和发布链路将在下一切片接入。没有 Evidence 的内容不会出现在这里。</p><button className="primary-button" onClick={onAsk}><Icon name="message" size={15} />从对话创建 Skill</button></div>
+          <div className="pulse-empty"><span><Icon name="rss" size={23} /></span><strong>还没有可靠动态</strong><p>确认 Skill 后可手动运行。只有引用官方 Evidence、通过独立核验和 Policy Gate 的内容才会出现在这里。</p><button className="primary-button" onClick={onAsk}><Icon name="message" size={15} />从对话创建 Skill</button></div>
         ) : (
           <div className="pulse-grid">
             {visibleItems.map((item) => (
               <article className="pulse-card" key={item.id}>
                 <i className={`pulse-accent ${categoryTone(item.category)}`} />
                 <div className="pulse-card-body">
-                  <div className="pulse-meta"><span>{item.category}</span><i>·</i><span className="credibility"><Icon name="shield" size={12} />{item.verificationStatus}</span><i>·</i><span>{formatTime(item.publishedAt)}</span></div>
-                  <h2>{item.title}</h2><p>{item.summary}</p>
+                  <div className="pulse-meta"><span>{item.category}</span><i>·</i><span className="credibility"><Icon name="shield" size={12} />已核验</span><i>·</i><span>{item.sourceCount} 个官方来源</span><i>·</i><span>{formatTime(item.publishedAt)}</span></div>
+                  <h2>{item.title}</h2><p>{item.summary}</p><div className="recommendation-reason"><strong>推荐原因</strong><span>{item.recommendationReason}</span></div>
                 </div>
-                <div className="pulse-actions"><button onClick={onAsk}><Icon name="message" size={14} />询问</button><button onClick={onLearn}><Icon name="book" size={14} />进入学习</button></div>
+                <div className="pulse-actions"><button onClick={() => void handleEvidence(item)}><Icon name="shield" size={14} />{m2Copy.evidenceTitle}</button><button disabled={busyId !== null} onClick={() => void handleLearning(item)}><Icon name="book" size={14} />{busyId === item.id ? '正在生成…' : m2Copy.generateLearning}</button></div>
+                {expandedId === item.id && <div className="evidence-panel">{evidence[item.id] ? evidence[item.id].map((source) => <article key={source.id}><div><span className="status-pill active">官方来源</span><time>{source.publishedAt ? formatTime(source.publishedAt) : '未提供发布时间'}</time></div><h3>{source.title}</h3><p>{source.excerpt}</p><footer><a href={source.sourceUrl} rel="noreferrer" target="_blank"><Icon name="external-link" size={13} />打开原始来源</a><code title={source.contentHash}>SHA-256 {source.contentHash.slice(0, 12)}…</code></footer></article>) : <div className="evidence-loading">正在读取不可变 Evidence…</div>}</div>}
               </article>
             ))}
           </div>

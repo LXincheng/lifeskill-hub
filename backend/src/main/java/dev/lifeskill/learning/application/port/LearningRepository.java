@@ -13,6 +13,7 @@ public interface LearningRepository {
     LearningFolder saveFolder(LearningFolder folder);
     void deleteFolder(UUID folderId);
     List<ContentItem> findContentByFolder(UUID folderId);
+    List<ContentItem> findContentBySourceRun(UUID sourceRunId);
     Optional<ContentItem> findContent(UUID contentId);
     ContentItem saveContent(ContentItem content);
     void deleteContent(UUID contentId);

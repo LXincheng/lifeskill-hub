@@ -49,21 +49,37 @@ class ContentItemEntity {
             Map<String, Object> payload,
             Instant createdAt,
             Instant updatedAt) {
+        this(id, folderId, null, type, title, payload, "USER_AUTHORED", createdAt, updatedAt);
+    }
+
+    ContentItemEntity(
+            UUID id,
+            UUID folderId,
+            UUID sourceSkillRunId,
+            ContentItemType type,
+            String title,
+            Map<String, Object> payload,
+            String verificationStatus,
+            Instant createdAt,
+            Instant updatedAt) {
         this.id = id;
         this.folderId = folderId;
+        this.sourceSkillRunId = sourceSkillRunId;
         this.type = type;
         this.title = title;
         this.payload = payload;
-        this.verificationStatus = "USER_AUTHORED";
+        this.verificationStatus = verificationStatus;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
     UUID id() { return id; }
     UUID folderId() { return folderId; }
+    UUID sourceSkillRunId() { return sourceSkillRunId; }
     ContentItemType type() { return type; }
     String title() { return title; }
     Map<String, Object> payload() { return payload; }
+    String verificationStatus() { return verificationStatus; }
     Instant createdAt() { return createdAt; }
     Instant updatedAt() { return updatedAt; }
 }

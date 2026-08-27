@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import dev.lifeskill.conversation.application.ConversationNotFoundException;
+import dev.lifeskill.agent.application.AgentRunNotFoundException;
 import dev.lifeskill.learning.application.LearningResourceNotFoundException;
 import dev.lifeskill.skill.application.IdempotencyConflictException;
 import dev.lifeskill.skill.application.InvalidIdempotencyKeyException;
@@ -26,6 +27,11 @@ public class ApiExceptionHandler {
         problem.setTitle("Conversation not found");
         problem.setProperty("code", "CONVERSATION_NOT_FOUND");
         return problem;
+    }
+
+    @ExceptionHandler(AgentRunNotFoundException.class)
+    ProblemDetail handleAgentRunNotFound(AgentRunNotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage(), "Agent run not found", "AGENT_RUN_NOT_FOUND", "agent-run-not-found");
     }
 
     @ExceptionHandler(SkillDraftNotFoundException.class)

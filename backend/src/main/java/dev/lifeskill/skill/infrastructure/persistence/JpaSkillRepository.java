@@ -4,6 +4,7 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -63,6 +64,11 @@ class JpaSkillRepository implements SkillRepository {
     @Override
     public Optional<SkillVersion> findVersion(UUID skillId, int version) {
         return versionRepository.findBySkillIdAndVersion(skillId, version).map(this::toDomain);
+    }
+
+    @Override
+    public List<Skill> findAll() {
+        return skillRepository.findAllByOrderByUpdatedAtDesc().stream().map(this::toDomain).toList();
     }
 
     private Skill toDomain(SkillEntity entity) {

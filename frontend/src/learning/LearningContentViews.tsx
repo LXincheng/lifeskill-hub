@@ -47,7 +47,13 @@ function renderArticleText(block: string, blockIndex: number) {
 }
 
 function PathViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
-  const steps = item.body.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => ({ done: /^\[x\]/i.test(line), text: line.replace(/^\[(?:x| )\]\s*/i, '').replace(/^[-*\d.]+\s*/, '') }))
+  const lines = item.body.split('\n').map((line) => line.trim()).filter(Boolean)
+  const headingIndexes = lines.map((line, index) => /^#{1,3}\s*步骤\s*\d+/i.test(line) ? index : -1).filter((index) => index >= 0)
+  const rawSteps = headingIndexes.length > 0 ? headingIndexes.map((start, index) => {
+    const end = headingIndexes[index + 1] ?? lines.length
+    return lines.slice(start, end).join(' ').replace(/^#{1,3}\s*/, '')
+  }) : lines
+  const steps = rawSteps.map((line) => ({ done: /^\[x\]/i.test(line), text: line.replace(/^\[(?:x| )\]\s*/i, '').replace(/^[-*\d.]+\s*/, '') }))
   const completed = steps.filter((step) => step.done).length
   const currentIndex = steps.findIndex((step) => !step.done)
   return <article className="content-view path-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><p className="content-intro">按顺序推进，每完成一步就在编辑页使用 [x] 标记。</p><div className="path-progress"><span><strong>{completed}</strong> / {steps.length} 已完成</span><i><b style={{ width: `${steps.length ? completed / steps.length * 100 : 0}%` }} /></i></div><div className="timeline">{steps.map((step, index) => <div className={step.done ? 'timeline-step done' : index === currentIndex ? 'timeline-step current' : 'timeline-step'} key={`${step.text}-${index}`}><span className="timeline-marker">{step.done ? <Icon name="check" size={14} /> : index + 1}</span><div><small>{step.done ? '已完成' : index === currentIndex ? '当前步骤' : '待开始'}</small><strong>{step.text}</strong></div></div>)}</div></article>
@@ -56,13 +62,26 @@ function PathViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }
 type QuizQuestion = { prompt: string; options: string[]; answer: number }
 
 function parseQuiz(body: string): QuizQuestion[] {
-  return body.split(/\n\s*---\s*\n/).map((block) => {
+  const strict = body.split(/\n\s*---\s*\n/).map((block) => {
     const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
     const prompt = lines.find((line) => !/^[-*]\s+/.test(line) && !/^(?:answer|答案)\s*[:：]/i.test(line)) ?? ''
     const options = lines.filter((line) => /^[-*]\s+/.test(line)).map((line) => line.replace(/^[-*]\s+/, ''))
     const answerLine = lines.find((line) => /^(?:answer|答案)\s*[:：]/i.test(line))
     const answer = answerLine ? Number(answerLine.match(/\d+/)?.[0] ?? 0) - 1 : -1
     return { prompt, options, answer }
+  }).filter((question) => question.prompt && question.options.length >= 2 && question.answer >= 0 && question.answer < question.options.length)
+  if (strict.length > 0) return strict
+
+  const lines = body.split('\n').map((line) => line.trim()).filter(Boolean)
+  const headings = lines.map((line, index) => /^#{1,3}\s*题目\s*\d+/i.test(line) ? index : -1).filter((index) => index >= 0)
+  const answerLine = lines.find((line) => /^答案\s*[:：]/.test(line)) ?? ''
+  const answers = new Map(Array.from(answerLine.matchAll(/(\d+)\s*[.、:]\s*([A-D])/gi)).map((match) => [Number(match[1]), match[2].toUpperCase().charCodeAt(0) - 65]))
+  return headings.map((start, index) => {
+    const end = headings[index + 1] ?? lines.findIndex((line, lineIndex) => lineIndex > start && /^---$/.test(line))
+    const block = lines.slice(start + 1, end > start ? end : lines.length)
+    const prompt = block.find((line) => !/^[A-D][.、]\s*/i.test(line)) ?? ''
+    const options = block.filter((line) => /^[A-D][.、]\s*/i.test(line)).map((line) => line.replace(/^[A-D][.、]\s*/i, ''))
+    return { prompt, options, answer: answers.get(index + 1) ?? -1 }
   }).filter((question) => question.prompt && question.options.length >= 2 && question.answer >= 0 && question.answer < question.options.length)
 }
 

@@ -27,9 +27,9 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 ## 当前真实能力边界
 
-已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建 Skill、消息执行收据、学习文件夹和内容 CRUD、文章/路径/测验浏览。
+已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建与管理 Skill、消息执行收据、受控 AgentRun、Spring AI 官方 Release 采集、Evidence/Claim/Verifier/Policy Gate、可靠动态、从动态生成学习文件夹与文章/路径/测验。
 
-尚未可用：真实来源采集、Evidence/Claim 业务链路、SkillRun 调度、可靠动态生成、从动态自动生成学习内容、通知、行情工具和购票工具。界面与 Agent 不得把这些能力描述为已经执行。
+尚未可用：通知、实时行情适配器、购票查询与写操作 Tool、复杂在线编辑器和跨来源冲突处理。界面与 Agent 不得把这些能力描述为已经执行。
 
 ## UI 方向
 
@@ -68,6 +68,9 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 根目录 `.env` 是本地 DeepSeek 与数据库配置入口，文件被 Git 忽略。
 - 2026-08-27 根据最新版 Figma 原型重做前端信息结构：移除聊天右侧面板，新增真实状态与四个任务入口；学习页升级为桌面三栏和手机三级栈；动态分类改用分段控件和分类色条。
 - 对话发送采用乐观显示，等待期间展示请求耗时；助手消息保存可核验的处理收据，不展示思维链。学习编辑器支持编辑/预览切换。
+- M2 纵向闭环已完成：`Java Agent Weekly` 可手动或按周运行；Harness 以 8 步上限和 120 秒超时编排 Planner、Researcher、Verifier、Composer，SSE 只发送可核验事件。
+- 首个 Source Adapter 固定读取 `spring-projects/spring-ai` 官方 GitHub Releases；Evidence 保存发布时间、采集时间、原始内容和 SHA-256，Claim 必须引用 Evidence ID。
+- Java Policy Gate 在发布动态和生成学习内容前重复检查 Evidence、官方 URL、独立核验状态和置信阈值；学习生成具有数据库级幂等边界。
 
 ## 产品形态说明
 

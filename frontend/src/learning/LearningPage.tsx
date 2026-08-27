@@ -298,9 +298,11 @@ function ContentEditorForm({
   const previewItem: ContentItem = {
     id: target?.id ?? 'preview',
     folderId: target?.folderId ?? 'preview',
+    sourceSkillRunId: target?.sourceSkillRunId ?? null,
     type,
     title: title.trim() || '无标题内容',
     body: body.trim() || '开始输入正文后，这里会显示最终阅读效果。',
+    verificationStatus: target?.verificationStatus ?? 'USER_AUTHORED',
     createdAt: target?.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }

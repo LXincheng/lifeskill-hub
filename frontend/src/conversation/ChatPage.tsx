@@ -8,6 +8,7 @@ import type { ConversationState } from './useConversation'
 
 type ChatPageProps = {
   state: ConversationState
+  onManageSkill: (skillId: string) => void
 }
 
 const starterPrompts: Array<{ icon: IconName; tone: string; label: string; description: string; prompt: string }> = [
@@ -40,7 +41,7 @@ function formatDate(value?: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' }).format(date)
 }
 
-export function ChatPage({ state }: ChatPageProps) {
+export function ChatPage({ state, onManageSkill }: ChatPageProps) {
   const [input, setInput] = useState('')
   const [waitSeconds, setWaitSeconds] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -165,7 +166,7 @@ export function ChatPage({ state }: ChatPageProps) {
                       >{state.confirmingDraftId === draft.id ? '正在确认…' : '确认创建 Skill'}</button>
                     </div>
                   ) : (
-                    <footer className="confirmed"><Icon name="check-circle" size={15} />已创建 Skill · 版本 1 · 当前为启用状态</footer>
+                    <footer className="confirmed"><span><Icon name="check-circle" size={15} />已创建 Skill · 版本 1 · 当前为启用状态</span>{draft.confirmedSkillId && <button className="secondary-button" onClick={() => onManageSkill(draft.confirmedSkillId!)}>查看并运行</button>}</footer>
                   )}
                 </article>
               ))}

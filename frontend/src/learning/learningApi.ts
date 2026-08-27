@@ -11,9 +11,11 @@ export type ContentItemType = 'LEARNING_PATH' | 'ARTICLE' | 'NOTE' | 'QUIZ' | 'C
 export type ContentItem = {
   id: string
   folderId: string
+  sourceSkillRunId: string | null
   type: ContentItemType
   title: string
   body: string
+  verificationStatus: 'USER_AUTHORED' | 'VERIFIED' | 'PARTIALLY_VERIFIED'
   createdAt: string
   updatedAt: string
 }

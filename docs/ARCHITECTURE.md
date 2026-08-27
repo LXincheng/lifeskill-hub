@@ -2,19 +2,19 @@
 
 ## 1. 总体架构
 
-下图是目标模块边界。当前已实现 `conversation`、`skill`、`learning`、`pulse` 的基础能力和 DeepSeek 适配；`agent`、`evidence`、调度与通知仍按里程碑逐步实现。
+下图是模块边界。当前已实现 `conversation`、`skill`、`learning`、`pulse`、`agent` 与 Evidence/Claim 可信管道；通知和其他外部工具仍按里程碑逐步实现。
 
 ```text
 React Web / PWA
         ↓ REST / SSE
 Spring Boot 模块化单体
-├── conversation   已实现：对话、意图、执行收据；SSE 待接入
-├── skill          已实现：定义、版本、确认和状态 API；运行调度待接入
+├── conversation   已实现：对话、意图、执行收据
+├── skill          已实现：定义、版本、确认、状态、手动运行与每周调度
 ├── learning       已实现：文件夹、内容 CRUD 和基础浏览
-├── pulse          已实现：只读列表和可信空状态；生成链路待接入
-├── integration    已实现：DeepSeek；官方来源适配器属于 M2
-├── agent          M2：Runtime、角色、Harness、Policy Gate
-├── evidence       M2：来源、Claim 和核验
+├── pulse          已实现：可靠动态、来源数量、推荐原因与证据入口
+├── integration    已实现：DeepSeek 与 Spring AI 官方 GitHub Release Adapter
+├── agent          已实现：Runtime、角色、Harness、SSE、Policy Gate
+├── evidence       已实现：不可变来源、Claim、关联与独立核验
 ├── plan           后续：计划与任务
 └── notification   后续：应用内/Web Push/外部渠道
         ↓
@@ -55,6 +55,13 @@ RECEIVED → PLANNING → COLLECTING → VERIFYING
 - 行情、库存、场次等易变化数据必须在代码侧标注采集时间并在使用前重新确认。
 - 购票、通知、下单等外部写操作使用单独 Tool；查询结果不等于预订成功，最终写操作必须人工确认。
 - 未注册 Tool 不可由模型临时访问；工具失败时保存安全摘要，不把失败伪装成完成。
+
+### 2.4 行情、购票与通知的扩展契约
+
+- 行情属于只读 `Source Adapter`：适配器返回来源、标的、报价时间、采集时间和原始响应哈希；确定性代码重算涨跌与时效，模型只能解释。没有实时适配器时不得发布行情结论。
+- 购票分成只读查询 Adapter 与写操作 Tool。场次、库存和价格每次使用前重新采集；登录、锁座、下单和支付属于外部写操作，必须在参数明确后展示确认草案，并在最后一步再次人工确认。
+- 通知属于单独的写操作 Tool。动态发布不等于已发送通知；通知需要渠道权限、免打扰规则、幂等键和发送审计，失败不能回写为动态失败。
+- 这些扩展复用 AgentRun、Evidence、Claim 和 Policy Gate，但不会让模型获得任意网络或支付权限，也不需要拆成微服务。
 
 ## 3. 数据可信管道
 

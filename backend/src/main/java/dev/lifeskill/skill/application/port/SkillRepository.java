@@ -1,6 +1,7 @@
 package dev.lifeskill.skill.application.port;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 import dev.lifeskill.skill.domain.Skill;
@@ -15,4 +16,6 @@ public interface SkillRepository {
     Optional<Skill> findById(UUID skillId);
 
     Optional<SkillVersion> findVersion(UUID skillId, int version);
+
+    List<Skill> findAll();
 }
