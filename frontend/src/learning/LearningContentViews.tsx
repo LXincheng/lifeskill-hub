@@ -31,7 +31,19 @@ function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit: () => void
 
 function ArticleReader({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
   const blocks = item.body.split('```')
-  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : block.split(/\n\s*\n/).filter(Boolean).map((paragraph, paragraphIndex) => <p key={`${index}-${paragraphIndex}`}>{paragraph.trim()}</p>))}</div></article>
+  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : renderArticleText(block, index))}</div></article>
+}
+
+function renderArticleText(block: string, blockIndex: number) {
+  return block.split(/\n\s*\n/).filter(Boolean).map((raw, paragraphIndex) => {
+    const paragraph = raw.trim()
+    const image = paragraph.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/i)
+    if (image) {
+      return <figure className="article-media" key={`${blockIndex}-${paragraphIndex}`}><img src={image[2]} alt={image[1]} loading="lazy" /><figcaption>{image[1]}</figcaption></figure>
+    }
+    if (paragraph.startsWith('## ')) return <h2 key={`${blockIndex}-${paragraphIndex}`}>{paragraph.slice(3)}</h2>
+    return <p key={`${blockIndex}-${paragraphIndex}`}>{paragraph}</p>
+  })
 }
 
 function PathViewer({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {

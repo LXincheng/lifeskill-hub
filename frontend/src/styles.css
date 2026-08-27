@@ -260,6 +260,10 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-
 .content-view h1, .editor-shell h1 { margin: 0; font-size: var(--text-display); line-height: 1.35; letter-spacing: -.025em; }
 .article-body { margin-top: 24px; color: #414148; font-size: var(--text-body); line-height: 1.85; }
 .article-body p { margin: 0 0 20px; white-space: pre-wrap; }
+.article-body h2 { margin: 32px 0 12px; color: var(--foreground); font-size: var(--text-title); line-height: 1.5; }
+.article-media { margin: 24px 0; overflow: hidden; background: #e8e8ed; border: 1px solid var(--border); border-radius: var(--radius-card); }
+.article-media img { display: block; width: 100%; max-height: 360px; object-fit: contain; background: #fff; }
+.article-media figcaption { padding: 10px 16px; color: var(--muted-foreground); font-size: var(--text-caption); line-height: 1.5; }
 .article-body pre { margin: 20px 0; padding: 20px; overflow-x: auto; color: #eef2ff; background: #202127; border-radius: var(--radius-card); font-family: "JetBrains Mono", monospace; font-size: var(--text-meta); line-height: 1.7; }
 .content-intro { margin: 8px 0 24px; color: var(--muted-foreground); font-size: var(--text-control); line-height: 1.6; }
 .path-progress { margin-bottom: 24px; padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); }
