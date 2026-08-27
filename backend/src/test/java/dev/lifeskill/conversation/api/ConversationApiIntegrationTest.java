@@ -74,6 +74,11 @@ class ConversationApiIntegrationTest {
                 .andExpect(jsonPath("$.messages[0].role").value("USER"))
                 .andExpect(jsonPath("$.messages[0].content").value("每周五整理 Java Agent 前沿"))
                 .andExpect(jsonPath("$.messages[1].role").value("ASSISTANT"))
+                .andExpect(jsonPath("$.messages[1].processingSteps", hasSize(4)))
+                .andExpect(jsonPath("$.messages[1].processingSteps[0].stage").value("RECEIVED"))
+                .andExpect(jsonPath("$.messages[1].processingSteps[1].stage").value("PLANNING"))
+                .andExpect(jsonPath("$.messages[1].processingSteps[2].stage").value("POLICY_CHECK"))
+                .andExpect(jsonPath("$.messages[1].durationMs").isNumber())
                 .andExpect(jsonPath("$.skillDrafts", hasSize(1)))
                 .andExpect(jsonPath("$.skillDrafts[0].title").value("Java Agent Weekly"))
                 .andExpect(jsonPath("$.skillDrafts[0].dayOfWeek").value("FRIDAY"))
@@ -121,6 +126,7 @@ class ConversationApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.messages", hasSize(2)))
                 .andExpect(jsonPath("$.messages[0].content").value("每周五整理 Java Agent 前沿"))
+                .andExpect(jsonPath("$.messages[1].processingSteps", hasSize(4)))
                 .andExpect(jsonPath("$.skillDrafts", hasSize(1)))
                 .andExpect(jsonPath("$.skillDrafts[0].objective")
                         .value("每周整理 Java Agent 前沿，并优先核对官方来源。"))
@@ -155,6 +161,7 @@ class ConversationApiIntegrationTest {
                 .andExpect(jsonPath("$.messages[0].role").value("USER"))
                 .andExpect(jsonPath("$.messages[1].content")
                         .value("消息已保存，但 AI 草案暂时不可用：模型服务可能异常，或结果没有通过校验。你可以稍后重试；系统不会据此创建长期任务。"))
+                .andExpect(jsonPath("$.messages[1].processingSteps[1].status").value("FAILED"))
                 .andExpect(jsonPath("$.skillDrafts", hasSize(0)));
     }
 
@@ -176,6 +183,8 @@ class ConversationApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.messages[1].content")
                         .value("我识别到这是一次搜索需求。可靠来源检索将在下一阶段接入，在此之前我不会生成未经核验的搜索结论。"))
+                .andExpect(jsonPath("$.messages[1].processingSteps[2].stage").value("COLLECTING"))
+                .andExpect(jsonPath("$.messages[1].processingSteps[2].status").value("BLOCKED"))
                 .andExpect(jsonPath("$.skillDrafts", hasSize(0)));
     }
 

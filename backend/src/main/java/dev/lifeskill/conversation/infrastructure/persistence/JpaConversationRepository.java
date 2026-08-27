@@ -45,7 +45,13 @@ class JpaConversationRepository implements ConversationRepository {
     }
 
     private MessageEntity toEntity(Message message) {
-        return new MessageEntity(message.id(), message.role(), message.content(), message.createdAt());
+        return new MessageEntity(
+                message.id(),
+                message.role(),
+                message.content(),
+                message.createdAt(),
+                message.processingSteps(),
+                message.durationMs());
     }
 
     private Conversation toDomain(ConversationEntity entity) {
@@ -56,7 +62,12 @@ class JpaConversationRepository implements ConversationRepository {
                 entity.updatedAt(),
                 entity.messages().stream()
                         .map(message -> new Message(
-                                message.id(), message.role(), message.content(), message.createdAt()))
+                                message.id(),
+                                message.role(),
+                                message.content(),
+                                message.createdAt(),
+                                message.processingSteps(),
+                                message.durationMs()))
                         .toList());
     }
 }

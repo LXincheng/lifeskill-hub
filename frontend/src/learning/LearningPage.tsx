@@ -254,18 +254,15 @@ export function LearningPage() {
           </EditorShell>
         ) : editor?.kind === 'content' ? (
           <EditorShell backLabel={selectedFolder?.name ?? '文件列表'} title={editor.target ? '编辑内容' : '新建内容'} onClose={handleCloseEditor}>
-            <form className="resource-form" onSubmit={handleSaveContent}>
-              <label>内容类型<select defaultValue={editor.target?.type ?? 'ARTICLE'} name="type"><option value="LEARNING_PATH">学习路径</option><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="QUIZ">测验</option><option value="CHECKLIST">行动清单</option></select></label>
-              <label>标题<input autoFocus defaultValue={editor.target?.title} maxLength={240} name="title" required /></label>
-              <label>正文<textarea className="document-textarea" defaultValue={editor.target?.body} maxLength={20000} name="body" rows={14} required /></label>
-              <p className="editor-help">路径和清单每行写一步，可用 [x] 标记完成；测验使用“题目、- 选项、答案: 1”，多题用 --- 分隔；文章中的 ``` 代码块会单独排版。</p>
-              <div className="resource-form-actions">
-                {editor.target && <button className="danger-quiet" disabled={isSaving} onClick={() => void handleDeleteContent(editor.target!.id)} type="button"><Icon name="trash" size={16} />{deleteTarget === `content:${editor.target.id}` ? '再次点击确认删除' : '删除内容'}</button>}
-                <span />
-                <button className="secondary-button" onClick={handleCloseEditor} type="button">取消</button>
-                <button className="primary-button" disabled={isSaving} type="submit"><Icon name="save" size={16} />{isSaving ? '保存中…' : '保存'}</button>
-              </div>
-            </form>
+            <ContentEditorForm
+              key={editor.target?.id ?? 'new-content'}
+              isSaving={isSaving}
+              onCancel={handleCloseEditor}
+              onDelete={editor.target ? () => void handleDeleteContent(editor.target!.id) : undefined}
+              onSubmit={handleSaveContent}
+              target={editor.target}
+              deleteLabel={editor.target && deleteTarget === `content:${editor.target.id}` ? '再次点击确认删除' : '删除内容'}
+            />
           </EditorShell>
         ) : selectedItem ? (
           <>
@@ -282,6 +279,53 @@ export function LearningPage() {
       </main>
     </section>
   )
+}
+
+function ContentEditorForm({
+  target, isSaving, deleteLabel, onSubmit, onCancel, onDelete,
+}: {
+  target: ContentItem | null
+  isSaving: boolean
+  deleteLabel: string
+  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
+  onCancel: () => void
+  onDelete?: () => void
+}) {
+  const [mode, setMode] = useState<'edit' | 'preview'>('edit')
+  const [type, setType] = useState<ContentItemType>(target?.type ?? 'ARTICLE')
+  const [title, setTitle] = useState(target?.title ?? '')
+  const [body, setBody] = useState(target?.body ?? '')
+  const previewItem: ContentItem = {
+    id: target?.id ?? 'preview',
+    folderId: target?.folderId ?? 'preview',
+    type,
+    title: title.trim() || '无标题内容',
+    body: body.trim() || '开始输入正文后，这里会显示最终阅读效果。',
+    createdAt: target?.createdAt ?? new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  return <form className="resource-form document-editor" onSubmit={onSubmit}>
+    <input name="type" type="hidden" value={type} />
+    <input name="title" type="hidden" value={title} />
+    <input name="body" type="hidden" value={body} />
+    <div className="editor-mode-control" role="tablist" aria-label="内容编辑模式">
+      <button aria-selected={mode === 'edit'} className={mode === 'edit' ? 'active' : ''} onClick={() => setMode('edit')} role="tab" type="button">编辑</button>
+      <button aria-selected={mode === 'preview'} className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')} role="tab" type="button">预览</button>
+    </div>
+    {mode === 'edit' ? <div className="document-fields">
+      <label>内容类型<select value={type} onChange={(event) => setType(event.target.value as ContentItemType)}><option value="LEARNING_PATH">学习路径</option><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="QUIZ">测验</option><option value="CHECKLIST">行动清单</option></select></label>
+      <label>标题<input autoFocus maxLength={240} onChange={(event) => setTitle(event.target.value)} required value={title} /></label>
+      <label>正文<textarea className="document-textarea" maxLength={20000} onChange={(event) => setBody(event.target.value)} required rows={14} value={body} /></label>
+      <p className="editor-help">文章支持 ## 二级标题、``` 代码块和独占一行的 ![说明](https://图片地址)；路径可用 [x] 标记完成；测验使用“题目、- 选项、答案: 1”，多题用 --- 分隔。</p>
+    </div> : <div className="document-preview"><LearningContentViewer item={previewItem} /></div>}
+    <div className="resource-form-actions">
+      {onDelete && <button className="danger-quiet" disabled={isSaving} onClick={onDelete} type="button"><Icon name="trash" size={16} />{deleteLabel}</button>}
+      <span />
+      <button className="secondary-button" onClick={onCancel} type="button">取消</button>
+      <button className="primary-button" disabled={isSaving || !title.trim() || !body.trim()} type="submit"><Icon name="save" size={16} />{isSaving ? '保存中…' : '保存并返回阅读'}</button>
+    </div>
+  </form>
 }
 
 function MobileBack({ label, onClick }: { label: string; onClick: () => void }) {

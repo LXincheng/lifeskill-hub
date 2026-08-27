@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent, KeyboardEvent } from 'react'
 
 import { Icon } from '../components/Icon'
@@ -42,11 +42,27 @@ function formatDate(value?: string) {
 
 export function ChatPage({ state }: ChatPageProps) {
   const [input, setInput] = useState('')
+  const [waitSeconds, setWaitSeconds] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const conversation = state.conversation
+  const visibleMessages = conversation
+    ? [...conversation.messages, ...(state.pendingMessage ? [state.pendingMessage] : [])]
+    : []
   const pendingDraftCount = conversation?.skillDrafts.filter((draft) => draft.status === 'PENDING_CONFIRMATION').length ?? 0
   const hour = new Date().getHours()
   const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
+
+  useEffect(() => {
+    if (!state.isSending) { setWaitSeconds(0); return }
+    const startedAt = Date.now()
+    const timer = window.setInterval(() => setWaitSeconds(Math.floor((Date.now() - startedAt) / 1000)), 1000)
+    return () => window.clearInterval(timer)
+  }, [state.isSending])
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' })
+  }, [visibleMessages.length, state.isSending])
 
   function handleStarter(prompt: string) {
     setInput(prompt)
@@ -70,11 +86,11 @@ export function ChatPage({ state }: ChatPageProps) {
 
   return (
     <section className="chat-thread" aria-busy={state.isLoading || state.isSending}>
-      <div className="chat-scroll">
+      <div className="chat-scroll" ref={scrollRef}>
         <div className="chat-content">
           {state.isLoading && !conversation && <div className="chat-status" role="status">正在恢复对话历史…</div>}
 
-          {!state.isLoading && conversation?.messages.length === 0 && (
+          {!state.isLoading && conversation && visibleMessages.length === 0 && (
             <div className="chat-empty">
               <header className="chat-greeting">
                 <span>{formatDate()}</span>
@@ -100,16 +116,27 @@ export function ChatPage({ state }: ChatPageProps) {
             </div>
           )}
 
-          {conversation && conversation.messages.length > 0 && (
+          {conversation && visibleMessages.length > 0 && (
             <div className="message-thread">
               <div className="date-separator"><i /><span>{formatDate(conversation.messages[0]?.createdAt)}</span><i /></div>
-              {conversation.messages.map((message) => (
-                <article className={message.role === 'USER' ? 'conversation-message user' : 'conversation-message assistant'} key={message.id}>
+              {visibleMessages.map((message) => (
+                <article className={`${message.role === 'USER' ? 'conversation-message user' : 'conversation-message assistant'}${message.id.startsWith('pending-') ? ' pending' : ''}`} key={message.id}>
                   <header>
                     <span className="message-avatar">{message.role === 'USER' ? 'L' : 'AI'}</span>
                     <span>{message.role === 'USER' ? formatTime(message.createdAt) : `LifeSkill · ${formatTime(message.createdAt)}`}</span>
                   </header>
                   <p>{message.content}</p>
+                  {message.processingSteps.length > 0 && (
+                    <details className="agent-receipt">
+                      <summary><Icon name="activity" size={15} />执行过程 · {message.durationMs ?? 0} ms</summary>
+                      <ol>{message.processingSteps.map((step, index) => (
+                        <li className={step.status.toLowerCase()} key={`${step.stage}-${index}`}>
+                          <i>{step.status === 'COMPLETED' ? <Icon name="check" size={12} /> : step.status === 'BLOCKED' ? <Icon name="shield" size={12} /> : <Icon name="alert-circle" size={12} />}</i>
+                          <span><strong>{step.label}</strong><small>{step.detail}{step.durationMs > 0 ? ` · ${step.durationMs} ms` : ''}</small></span>
+                        </li>
+                      ))}</ol>
+                    </details>
+                  )}
                 </article>
               ))}
 
@@ -145,7 +172,7 @@ export function ChatPage({ state }: ChatPageProps) {
             </div>
           )}
 
-          {state.isSending && <div className="sending-status" role="status">正在保存并分析消息…</div>}
+          {state.isSending && <div className="sending-status" role="status"><span className="sending-pulse" /><span><strong>等待服务返回</strong><small>消息已提交，正在进行结构化分析 · {waitSeconds} 秒</small></span></div>}
           {state.error && (
             <div className="chat-error" role="alert"><span>{state.error}</span><button type="button" onClick={() => void state.reloadConversation()}>重试</button></div>
           )}

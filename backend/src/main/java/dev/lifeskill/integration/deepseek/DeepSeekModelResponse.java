@@ -8,6 +8,7 @@ public record DeepSeekModelResponse(
         Draft skillDraft) {
 
     public record Draft(
+            boolean enabled,
             String title,
             String objective,
             String dayOfWeek,

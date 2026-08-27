@@ -7,6 +7,7 @@ import java.util.UUID;
 import dev.lifeskill.conversation.domain.Conversation;
 import dev.lifeskill.conversation.domain.Message;
 import dev.lifeskill.conversation.domain.MessageRole;
+import dev.lifeskill.conversation.domain.ProcessingStep;
 import dev.lifeskill.skill.domain.SkillDraft;
 
 public record ConversationResponse(
@@ -31,10 +32,22 @@ public record ConversationResponse(
                 skillDrafts.stream().map(SkillDraftResponse::from).toList());
     }
 
-    public record MessageResponse(UUID id, MessageRole role, String content, Instant createdAt) {
+    public record MessageResponse(
+            UUID id,
+            MessageRole role,
+            String content,
+            Instant createdAt,
+            List<ProcessingStep> processingSteps,
+            Long durationMs) {
 
         private static MessageResponse from(Message message) {
-            return new MessageResponse(message.id(), message.role(), message.content(), message.createdAt());
+            return new MessageResponse(
+                    message.id(),
+                    message.role(),
+                    message.content(),
+                    message.createdAt(),
+                    message.processingSteps(),
+                    message.durationMs());
         }
     }
 

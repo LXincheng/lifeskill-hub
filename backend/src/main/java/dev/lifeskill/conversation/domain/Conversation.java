@@ -49,7 +49,17 @@ public final class Conversation {
     }
 
     public Message addAssistantMessage(UUID messageId, String content, Instant now) {
-        Message message = new Message(messageId, MessageRole.ASSISTANT, content, now);
+        return addAssistantMessage(messageId, content, now, List.of(), null);
+    }
+
+    public Message addAssistantMessage(
+            UUID messageId,
+            String content,
+            Instant now,
+            List<ProcessingStep> processingSteps,
+            Long durationMs) {
+        Message message = new Message(
+                messageId, MessageRole.ASSISTANT, content, now, processingSteps, durationMs);
         messages.add(message);
         updatedAt = now;
         return message;

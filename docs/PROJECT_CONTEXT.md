@@ -48,9 +48,9 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 - M0 本地骨架和 M1.1 真实对话骨架已完成：对话与消息领域模型、PostgreSQL 迁移、REST API、React 接入和刷新历史恢复。
 - 前端 typecheck/生产构建和后端领域、应用、HTTP/持久化测试均已通过；后端测试使用 H2 隔离本地数据库差异。
-- GitHub 公开仓库与首次推送已完成；本机暂未安装 Docker，因此 PostgreSQL 联调仍待验证。
+- GitHub 公开仓库与首次推送已完成；本机没有 Docker，但已使用本机 PostgreSQL 18 完成真实建库、Flyway 迁移和持久化联调。
 - M1.2 代码已完成：Model Port 隔离 DeepSeek，支持三类意图、结构化 Schema 校验、SkillDraft 业务校验与持久化，并在模型不可用时安全降级。
-- 当前环境没有 `DEEPSEEK_API_KEY`，真实 DeepSeek 联调仍待完成；模型默认关闭，启用需同时设置密钥和 `LIFESKILL_MODEL_ENABLED=true`。
+- 真实 DeepSeek 联调已完成；模型结构化契约升级为始终返回非空 Draft 外壳，避免普通问答因 nullable Schema 反复重试。
 - 下一开发切片是 M2：接入首个可靠 Source Adapter，建立 Evidence、Claim 与 Policy Gate 闭环。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
 - 新版前端工作台已经按 `docs/DESIGN_SYSTEM.md` 重构，对话、学习和动态共用导航、字体、图标及响应式规则。
@@ -59,6 +59,7 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 动态页已改为读取真实 `pulse_item` 数据；在 M2 可靠来源链路完成前保持可信空状态，不再展示样例核验数据。
 - 根目录 `.env` 是本地 DeepSeek 与数据库配置入口，文件被 Git 忽略。
 - 2026-08-27 根据最新版 Figma 原型重做前端信息结构：移除聊天右侧面板，新增真实状态与四个任务入口；学习页升级为桌面三栏和手机三级栈；动态分类改用分段控件和分类色条。
+- 对话发送采用乐观显示，等待期间展示请求耗时；助手消息保存可核验的处理收据，不展示思维链。学习编辑器支持编辑/预览切换。
 
 ## 新窗口建议提示词
 

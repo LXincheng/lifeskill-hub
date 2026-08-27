@@ -16,6 +16,7 @@ class DeepSeekModelContractTest {
                   "intent": "RECURRING_SKILL",
                   "reply": "我整理了一份待确认的 Skill 草案。",
                   "skillDraft": {
+                    "enabled": true,
                     "title": "Java Agent Weekly",
                     "objective": "每周整理 Java Agent 前沿，并优先核对官方来源。",
                     "dayOfWeek": "FRIDAY",
@@ -30,17 +31,17 @@ class DeepSeekModelContractTest {
 
         assertThat(decision.intent()).isEqualTo(ConversationIntent.RECURRING_SKILL);
         assertThat(decision.skillDraft().dayOfWeek()).isEqualTo("FRIDAY");
-        assertThat(decision.promptVersion()).isEqualTo("skill-draft-v1");
+        assertThat(decision.promptVersion()).isEqualTo("skill-draft-v2");
     }
 
     @Test
     void convertsOrdinaryAndSearchSamplesWithoutInventingDrafts() {
         var converter = new BeanOutputConverter<>(DeepSeekModelResponse.class);
         var ordinary = DeepSeekModelAdapter.toDecision(converter.convert("""
-                {"intent":"ORDINARY","reply":"可以先把目标拆成今天的一步。","skillDraft":null}
+                {"intent":"ORDINARY","reply":"可以先把目标拆成今天的一步。","skillDraft":{"enabled":false,"title":"","objective":"","dayOfWeek":"","time":"","timezone":""}}
                 """));
         var search = DeepSeekModelAdapter.toDecision(converter.convert("""
-                {"intent":"SEARCH","reply":"这需要查询最新官方资料。","skillDraft":null}
+                {"intent":"SEARCH","reply":"这需要查询最新官方资料。","skillDraft":{"enabled":false,"title":"","objective":"","dayOfWeek":"","time":"","timezone":""}}
                 """));
 
         assertThat(ordinary.intent()).isEqualTo(ConversationIntent.ORDINARY);

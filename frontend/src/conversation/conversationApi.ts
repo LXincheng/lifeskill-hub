@@ -5,6 +5,16 @@ export type ConversationMessage = {
   role: MessageRole
   content: string
   createdAt: string
+  processingSteps: ProcessingStep[]
+  durationMs: number | null
+}
+
+export type ProcessingStep = {
+  stage: string
+  label: string
+  status: 'COMPLETED' | 'BLOCKED' | 'FAILED'
+  durationMs: number
+  detail: string
 }
 
 export type SkillDraft = {
@@ -67,7 +77,15 @@ async function requestConversation(path: string, init?: RequestInit): Promise<Co
     throw new ConversationApiError(problem.detail ?? '请求暂时失败，请稍后重试。', response.status, problem.code)
   }
   const conversation = (await response.json()) as Conversation
-  return { ...conversation, skillDrafts: conversation.skillDrafts ?? [] }
+  return {
+    ...conversation,
+    messages: conversation.messages.map((message) => ({
+      ...message,
+      processingSteps: message.processingSteps ?? [],
+      durationMs: message.durationMs ?? null,
+    })),
+    skillDrafts: conversation.skillDrafts ?? [],
+  }
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

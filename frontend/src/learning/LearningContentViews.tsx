@@ -18,18 +18,18 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-export function LearningContentViewer({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
+export function LearningContentViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   if (item.type === 'LEARNING_PATH' || item.type === 'CHECKLIST') return <PathViewer item={item} onEdit={onEdit} />
   if (item.type === 'QUIZ') return <QuizViewer item={item} onEdit={onEdit} />
   return <ArticleReader item={item} onEdit={onEdit} />
 }
 
-function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
+function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   const config = contentTypeConfig[item.type]
-  return <header className="content-header"><div className="content-meta"><span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span><span>{config.label} · 更新于 {formatDate(item.updatedAt)}</span></div><button className="secondary-button" onClick={onEdit}><Icon name="pencil" size={15} />编辑</button></header>
+  return <header className="content-header"><div className="content-meta"><span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span><span>{config.label} · 更新于 {formatDate(item.updatedAt)}</span></div>{onEdit && <button className="secondary-button" onClick={onEdit}><Icon name="pencil" size={15} />编辑</button>}</header>
 }
 
-function ArticleReader({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
+function ArticleReader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   const blocks = item.body.split('```')
   return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : renderArticleText(block, index))}</div></article>
 }
@@ -46,7 +46,7 @@ function renderArticleText(block: string, blockIndex: number) {
   })
 }
 
-function PathViewer({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
+function PathViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   const steps = item.body.split('\n').map((line) => line.trim()).filter(Boolean).map((line) => ({ done: /^\[x\]/i.test(line), text: line.replace(/^\[(?:x| )\]\s*/i, '').replace(/^[-*\d.]+\s*/, '') }))
   const completed = steps.filter((step) => step.done).length
   const currentIndex = steps.findIndex((step) => !step.done)
@@ -66,7 +66,7 @@ function parseQuiz(body: string): QuizQuestion[] {
   }).filter((question) => question.prompt && question.options.length >= 2 && question.answer >= 0 && question.answer < question.options.length)
 }
 
-function QuizViewer({ item, onEdit }: { item: ContentItem; onEdit: () => void }) {
+function QuizViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   const questions = useMemo(() => parseQuiz(item.body), [item.body])
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)

@@ -7,7 +7,7 @@ import {
   getConversation,
   sendConversationMessage,
 } from './conversationApi'
-import type { Conversation } from './conversationApi'
+import type { Conversation, ConversationMessage } from './conversationApi'
 
 const ACTIVE_CONVERSATION_KEY = 'lifeskill.activeConversationId'
 
@@ -16,6 +16,7 @@ export type ConversationState = {
   error: string | null
   isLoading: boolean
   isSending: boolean
+  pendingMessage: ConversationMessage | null
   confirmingDraftId: string | null
   reloadConversation: () => Promise<void>
   startNewConversation: () => Promise<void>
@@ -28,6 +29,7 @@ export function useConversation(): ConversationState {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [pendingMessage, setPendingMessage] = useState<ConversationMessage | null>(null)
   const [confirmingDraftId, setConfirmingDraftId] = useState<string | null>(null)
   const hasInitialized = useRef(false)
   const confirmationKeys = useRef(new Map<string, string>())
@@ -40,6 +42,7 @@ export function useConversation(): ConversationState {
   const startNewConversation = useCallback(async () => {
     setIsLoading(true)
     setError(null)
+    setPendingMessage(null)
     try {
       rememberConversation(await createConversation())
     } catch {
@@ -78,6 +81,14 @@ export function useConversation(): ConversationState {
 
     setIsSending(true)
     setError(null)
+    setPendingMessage({
+      id: `pending-${crypto.randomUUID()}`,
+      role: 'USER',
+      content,
+      createdAt: new Date().toISOString(),
+      processingSteps: [],
+      durationMs: null,
+    })
     try {
       rememberConversation(await sendConversationMessage(conversation.id, content))
       return true
@@ -85,6 +96,7 @@ export function useConversation(): ConversationState {
       setError('消息未发送，请保留内容并重试。')
       return false
     } finally {
+      setPendingMessage(null)
       setIsSending(false)
     }
   }, [conversation, isSending, rememberConversation])
@@ -120,6 +132,7 @@ export function useConversation(): ConversationState {
     error,
     isLoading,
     isSending,
+    pendingMessage,
     confirmingDraftId,
     reloadConversation,
     startNewConversation,

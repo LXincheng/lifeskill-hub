@@ -6,6 +6,8 @@ import java.time.DateTimeException;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.slf4j.Logger;
@@ -18,6 +20,8 @@ import dev.lifeskill.conversation.application.model.ModelSkillDraftProposal;
 import dev.lifeskill.conversation.application.port.ModelPort;
 import dev.lifeskill.conversation.domain.Conversation;
 import dev.lifeskill.conversation.domain.Message;
+import dev.lifeskill.conversation.domain.ProcessingStep;
+import dev.lifeskill.conversation.domain.ProcessingStepStatus;
 import dev.lifeskill.shared.application.IdGenerator;
 import dev.lifeskill.skill.application.SkillDraftApplicationService;
 import dev.lifeskill.skill.domain.SkillDraft;
@@ -57,31 +61,58 @@ public class ConversationTurnApplicationService {
     }
 
     public ConversationTurnResult sendMessage(UUID conversationId, String content) {
+        long turnStartedAt = System.nanoTime();
         Conversation conversation = conversationService.sendUserMessage(conversationId, content);
         Message sourceMessage = conversation.messages().getLast();
+        List<ProcessingStep> steps = new ArrayList<>();
+        steps.add(new ProcessingStep(
+                "RECEIVED", "消息已保存", ProcessingStepStatus.COMPLETED,
+                elapsedMs(turnStartedAt), "已写入对话历史"));
 
         try {
+            long modelStartedAt = System.nanoTime();
             ModelDecision decision = modelPort.analyze(sourceMessage.content());
             if (decision == null) {
                 throw new ModelProcessingException("Model returned no decision");
             }
+            steps.add(new ProcessingStep(
+                    "PLANNING", "意图与草案分析", ProcessingStepStatus.COMPLETED,
+                    elapsedMs(modelStartedAt), "结构化输出已通过 Schema 校验"));
             Optional<SkillDraft> draft = createDraft(conversationId, sourceMessage.id(), decision);
+            if (decision.intent() == ConversationIntent.RECURRING_SKILL) {
+                steps.add(new ProcessingStep(
+                        "POLICY_CHECK", "长期任务规则校验", ProcessingStepStatus.COMPLETED,
+                        0, "周期、时区和确认边界已通过 Java 规则校验"));
+            } else if (decision.intent() == ConversationIntent.SEARCH) {
+                steps.add(new ProcessingStep(
+                        "COLLECTING", "可靠来源收集", ProcessingStepStatus.BLOCKED,
+                        0, "Source Adapter 与 Evidence 流水线尚未接入，未生成未经核验的结论"));
+            }
             String assistantReply = decision.intent() == ConversationIntent.SEARCH
                     ? SEARCH_NOT_READY_REPLY
                     : decision.reply();
-            Conversation completed = completionService.complete(conversationId, assistantReply, draft);
+            steps.add(new ProcessingStep(
+                    "COMPOSING", "回复已整理", ProcessingStepStatus.COMPLETED,
+                    0, "仅展示最终答复，不包含模型原始思维链"));
+            Conversation completed = completionService.complete(
+                    conversationId, assistantReply, draft, steps, elapsedMs(turnStartedAt));
             return result(completed);
         } catch (ModelProcessingException | IllegalArgumentException | DateTimeException exception) {
             LOGGER.warn(
                     "Conversation model turn degraded conversationId={} reason={}",
                     conversationId,
                     exception.getClass().getSimpleName());
+            steps.add(new ProcessingStep(
+                    "PLANNING", "模型响应校验", ProcessingStepStatus.FAILED,
+                    elapsedMs(turnStartedAt), "模型服务异常或结构化输出未通过校验，已安全降级"));
             Conversation completed = completionService.complete(
-                    conversationId,
-                    MODEL_UNAVAILABLE_REPLY,
-                    Optional.empty());
+                    conversationId, MODEL_UNAVAILABLE_REPLY, Optional.empty(), steps, elapsedMs(turnStartedAt));
             return result(completed);
         }
+    }
+
+    private long elapsedMs(long startedAt) {
+        return Math.max(0, (System.nanoTime() - startedAt) / 1_000_000);
     }
 
     private Optional<SkillDraft> createDraft(

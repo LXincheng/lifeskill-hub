@@ -173,6 +173,18 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-
 .message-avatar { display: grid; place-items: center; width: 28px; height: 28px; color: #33436c; background: #e8e8ed; border-radius: 50%; font-size: var(--text-caption); font-weight: 600; }
 .conversation-message.assistant .message-avatar { color: #fff; background: #1c1c1e; border-radius: 12px; }
 .conversation-message p { margin: 0 0 0 36px; color: #303036; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--text-body); line-height: 1.75; }
+.conversation-message.pending { opacity: .72; }
+.agent-receipt { margin: 4px 0 0 36px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.agent-receipt summary { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); cursor: pointer; list-style: none; font-size: var(--text-caption); font-weight: 600; }
+.agent-receipt summary::-webkit-details-marker { display: none; }
+.agent-receipt ol { display: grid; gap: 10px; margin: 12px 0 2px; padding: 12px 0 0; border-top: 1px solid var(--border); list-style: none; }
+.agent-receipt li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
+.agent-receipt li > i { display: grid; place-items: center; width: 22px; height: 22px; color: var(--success); background: #e5f5ef; border-radius: 8px; }
+.agent-receipt li.blocked > i { color: var(--warning); background: #fff4dc; }
+.agent-receipt li.failed > i { color: var(--danger); background: #fff0ee; }
+.agent-receipt li strong, .agent-receipt li small { display: block; }
+.agent-receipt li strong { font-size: var(--text-meta); }
+.agent-receipt li small { margin-top: 2px; color: var(--muted-foreground); font-size: var(--text-caption); line-height: 1.5; }
 .skill-draft { position: relative; overflow: hidden; width: calc(100% - 36px); margin-left: 36px; padding: 20px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
 .skill-draft-accent { position: absolute; top: 0; right: 0; left: 0; height: 3px; background: var(--primary); }
 .skill-draft-header { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 12px; }
@@ -201,7 +213,11 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-
 .page-error { position: absolute; z-index: 5; top: 16px; right: 16px; left: 16px; }
 .page-error span { flex: 1; }
 .chat-error button, .page-error button { color: inherit; background: transparent; border: 0; font-size: var(--text-caption); font-weight: 700; }
-.sending-status { min-height: auto; margin-top: 20px; }
+.sending-status { display: flex; align-items: center; justify-content: flex-start; gap: 12px; min-height: auto; margin: 4px 0 0 36px; }
+.sending-status span:last-child { display: grid; gap: 2px; }
+.sending-status strong { color: var(--foreground); font-size: var(--text-meta); }
+.sending-status small { color: var(--muted-foreground); font-size: var(--text-caption); }
+.sending-pulse { width: 10px; height: 10px; background: var(--primary); border: 3px solid #dce8ff; border-radius: 50%; box-sizing: content-box; }
 .composer-dock { flex: 0 0 auto; padding: 12px 24px; background: rgba(255, 255, 255, .92); border-top: 1px solid var(--border); backdrop-filter: blur(16px); }
 .composer { display: grid; grid-template-columns: minmax(0, 1fr) 40px; align-items: end; gap: 8px; width: min(100%, var(--chat-width)); margin: 0 auto; padding: 8px 8px 8px 16px; background: var(--secondary); border: 1px solid transparent; border-radius: var(--radius-card); }
 .composer:focus-within { background: var(--surface); border-color: rgba(29, 98, 232, .35); box-shadow: 0 0 0 3px rgba(29, 98, 232, .08); }
@@ -312,6 +328,13 @@ button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-
 .resource-form textarea { resize: vertical; }
 .document-textarea { min-height: 320px; font-family: "Plus Jakarta Sans", "Noto Sans SC", sans-serif; }
 .editor-help { margin: -8px 0 0; color: var(--muted-foreground); font-size: var(--text-caption); line-height: 1.6; }
+.document-editor { gap: 16px; }
+.editor-mode-control { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 3px; background: #e5e5ea; border-radius: var(--radius-control); }
+.editor-mode-control button { min-height: 34px; color: var(--muted-foreground); background: transparent; border: 0; border-radius: 9px; font-size: var(--text-meta); font-weight: 600; }
+.editor-mode-control button.active { color: var(--foreground); background: var(--surface); box-shadow: 0 1px 4px rgba(28, 28, 30, .12); }
+.document-fields { display: grid; gap: 16px; }
+.document-preview { min-height: 420px; overflow: hidden; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius-card); }
+.document-preview .content-view { padding: 24px; }
 .resource-form-actions { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 8px; }
 
 .pulse-view { display: flex; flex-direction: column; height: 100%; }
