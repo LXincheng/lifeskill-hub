@@ -2,26 +2,28 @@
 
 ## 1. 总体架构
 
+下图是目标模块边界。当前已实现 `conversation`、`skill`、`learning`、`pulse` 的基础能力和 DeepSeek 适配；`agent`、`evidence`、调度与通知仍按里程碑逐步实现。
+
 ```text
 React Web / PWA
         ↓ REST / SSE
 Spring Boot 模块化单体
-├── conversation   对话、意图和流式事件
-├── plan           计划与任务
-├── skill          Skill 定义、版本和调度
-├── agent          Runtime、角色、Harness、Policy Gate
-├── evidence       来源、Claim 和核验
-├── learning       文件夹、内容块、测验和进度
-├── pulse          动态聚合与用户标签
-├── notification   应用内/Web Push/外部渠道
-└── integration    DeepSeek、GitHub、RSS、行情等适配器
+├── conversation   已实现：对话、意图、执行收据；SSE 待接入
+├── skill          已实现：定义、版本、确认和状态 API；运行调度待接入
+├── learning       已实现：文件夹、内容 CRUD 和基础浏览
+├── pulse          已实现：只读列表和可信空状态；生成链路待接入
+├── integration    已实现：DeepSeek；官方来源适配器属于 M2
+├── agent          M2：Runtime、角色、Harness、Policy Gate
+├── evidence       M2：来源、Claim 和核验
+├── plan           后续：计划与任务
+└── notification   后续：应用内/Web Push/外部渠道
         ↓
 PostgreSQL / DeepSeek API / 外部事实 API
 ```
 
 ## 2. Agent 设计
 
-MVP 不部署多个自治服务。Planner、Researcher、Verifier、Composer 是同一 Runtime 中的角色化步骤，可以使用同一个 DeepSeek 模型的独立调用和上下文。
+MVP 不部署多个自治服务。Planner、Researcher、Verifier、Composer 是同一 Java Harness 中的角色化步骤；只有需要隔离上下文或独立核验时才发起额外模型调用，不能为了展示效果虚构多个 Agent。
 
 ```text
 RECEIVED → PLANNING → COLLECTING → VERIFYING
@@ -47,6 +49,13 @@ RECEIVED → PLANNING → COLLECTING → VERIFYING
 - 外部写操作的用户确认
 - 最终发布、降级或拦截
 
+### 2.3 外部工具边界
+
+- Source Adapter 只读采集官方文档、GitHub Release、RSS 等允许来源。
+- 行情、库存、场次等易变化数据必须在代码侧标注采集时间并在使用前重新确认。
+- 购票、通知、下单等外部写操作使用单独 Tool；查询结果不等于预订成功，最终写操作必须人工确认。
+- 未注册 Tool 不可由模型临时访问；工具失败时保存安全摘要，不把失败伪装成完成。
+
 ## 3. 数据可信管道
 
 ```text
@@ -62,9 +71,9 @@ Source Adapter
 
 禁止模型直接构造行情数字、来源 URL 或发布时间。来源不足、链接失效或 Claim 无 Evidence 时不得标为已核验。
 
-## 4. 建议数据表
+## 4. 数据表
 
-MVP 第一批：
+Flyway 已创建第一批核心表，但存在数据表不等于对应运行能力已经完成：
 
 - `conversation`
 - `message`
@@ -87,7 +96,7 @@ MVP 第一批：
 
 - 路径前缀 `/api`。
 - 聊天流式事件后续使用 SSE；普通配置使用 REST。
-- 所有长期写操作支持幂等键。
+- 所有长期写操作必须设计幂等键；当前 SkillDraft 确认已实现，后续运行、生成和通知接口接入时分别补齐。
 - 错误返回统一 Problem Details。
 - API DTO 与 JPA Entity 分离。
 - 外部模型和来源通过端口/适配器隔离，领域层不依赖具体 SDK。
@@ -102,4 +111,4 @@ MVP 第一批：
 
 ## 7. 部署
 
-开发期使用 Docker Compose 启动 PostgreSQL，前后端分别热更新。首个线上版本优先选择简单平台：静态前端 + 单个 Java 服务 + 托管 PostgreSQL，不做 Kubernetes。
+开发期可使用 Docker Compose 或本机 PostgreSQL，前后端分别热更新。首个线上版本优先选择静态前端 + 单个 Java 服务 + 托管 PostgreSQL；上线前必须补齐 Secret、CORS、健康检查、数据库备份和迁移验证，不做 Kubernetes。

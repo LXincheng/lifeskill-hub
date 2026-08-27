@@ -15,15 +15,21 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 架构：模块化单体，Java 侧实现 Agent Runtime/Harness。
 - 开源：GitHub 公开仓库。
 
-## 核心用户闭环
+## 目标用户闭环（并非全部已实现）
 
 1. 用户在聊天中描述一次性任务、学习目标或持续兴趣。
 2. 系统判断意图；需要搜索时展示轻量 Agent 过程流。
 3. Researcher 获取来源，Verifier 核对 Claim 与 Evidence。
 4. 对持续性需求，系统展示 SkillDraft，用户确认后才落库。
-5. Skill 定时或事件触发执行，生成动态卡片和可选通知。
+5. Skill 手动或定时触发受控运行，通过 Policy Gate 后生成动态卡片。
 6. 用户从聊天或动态进入学习文件夹，完成卡片、文章、测验或实践。
-7. 系统保存进度、反馈和复习任务，后续复盘推送质量。
+7. 后续阶段再保存学习进度、反馈和复习任务，并评估推送质量。
+
+## 当前真实能力边界
+
+已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建 Skill、消息执行收据、学习文件夹和内容 CRUD、文章/路径/测验浏览。
+
+尚未可用：真实来源采集、Evidence/Claim 业务链路、SkillRun 调度、可靠动态生成、从动态自动生成学习内容、通知、行情工具和购票工具。界面与 Agent 不得把这些能力描述为已经执行。
 
 ## UI 方向
 
@@ -34,15 +40,17 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 桌面只保留 76px 左侧主导航，移动端使用底部导航；字号、间距、圆角和 Lucide 图标统一由 `docs/DESIGN_SYSTEM.md` 约束。
 - 学习页采用文件夹、文件、内容三级结构，支持学习路径时间线、文章代码块和交互测验视图。
 
-## 首个业务切片
+## 当前 M2 业务切片
 
-建议先实现“Java Agent Weekly”：
+只实现“Java Agent Weekly”第一条可靠自动化闭环：
 
 - 聊天创建每周关注 Skill。
 - 使用 GitHub/官方文档适配器收集来源。
-- 输出 5 分钟简报、学习卡片和一道实践题。
+- 支持手动运行 Skill，输出带来源的简报，并生成学习路径、文章和测验。
 - 重要结论经过二次核验。
 - 在动态页展示，并可进入 Java Agent 学习文件夹。
+
+完成这条闭环后，行情研究、购票辅助等能力通过新的 Source Adapter 或受控 Tool 扩展。涉及实时价格、库存、账号、下单或支付时，必须重新校验数据并要求用户在最终外部写操作前确认。
 
 ## 当前工程状态（2026-08-27）
 
@@ -51,7 +59,7 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - GitHub 公开仓库与首次推送已完成；本机没有 Docker，但已使用本机 PostgreSQL 18 完成真实建库、Flyway 迁移和持久化联调。
 - M1.2 代码已完成：Model Port 隔离 DeepSeek，支持三类意图、结构化 Schema 校验、SkillDraft 业务校验与持久化，并在模型不可用时安全降级。
 - 真实 DeepSeek 联调已完成；模型结构化契约升级为始终返回非空 Draft 外壳，避免普通问答因 nullable Schema 反复重试。
-- 下一开发切片是 M2：接入首个可靠 Source Adapter，建立 Evidence、Claim 与 Policy Gate 闭环。
+- 当前开发切片是 M2：接入首个可靠 Source Adapter，建立 Evidence、Claim、Policy Gate、动态与学习内容生成闭环。
 - 所有命名、模块边界、Agent 安全和开发后讲解遵循 `docs/ENGINEERING_STANDARDS.md`。
 - 新版前端工作台已经按 `docs/DESIGN_SYSTEM.md` 重构，对话、学习和动态共用导航、字体、图标及响应式规则。
 - M1.3 已实现 SkillDraft 幂等确认、Skill/SkillVersion 落库，以及 Skill 暂停、恢复和修改 API；聊天页可以完成确认。
@@ -61,11 +69,6 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - 2026-08-27 根据最新版 Figma 原型重做前端信息结构：移除聊天右侧面板，新增真实状态与四个任务入口；学习页升级为桌面三栏和手机三级栈；动态分类改用分段控件和分类色条。
 - 对话发送采用乐观显示，等待期间展示请求耗时；助手消息保存可核验的处理收据，不展示思维链。学习编辑器支持编辑/预览切换。
 
-## 新窗口建议提示词
+## 产品形态说明
 
-```text
-请先阅读 AGENTS.md、docs/PROJECT_CONTEXT.md、docs/PRODUCT.md、
-docs/ARCHITECTURE.md、docs/ENGINEERING_STANDARDS.md 和
-docs/DEVELOPMENT_PLAN.md、docs/DESIGN_SYSTEM.md，然后检查 git status。
-继续当前里程碑，不扩展非目标功能，并在修改后运行相关测试。
-```
+“世界控制台式 All-in-One”描述的是信息密度、全局掌控感和跨能力闭环，不是新增地图、行情大盘或大量一级页面。所有新增能力仍应进入对话、学习、动态三个入口。
