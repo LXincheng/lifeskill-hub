@@ -98,4 +98,30 @@ class LearningApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(0)));
     }
+
+    @Test
+    void persistsLearningProgressAndQuizResultsAcrossReads() throws Exception {
+        String folder = mockMvc.perform(post("/api/learning-folders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"可恢复学习\",\"description\":\"进度测试\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String folderId = JsonPath.read(folder, "$.id");
+        String path = mockMvc.perform(post("/api/learning-folders/{folderId}/content-items", folderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"LEARNING_PATH\",\"title\":\"两步路径\",\"body\":\"[ ] 第一步\\n[ ] 第二步\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String contentId = JsonPath.read(path, "$.id");
+
+        mockMvc.perform(post("/api/content-items/{contentId}/attempts", contentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"PROGRESS\",\"status\":\"IN_PROGRESS\",\"completedUnits\":1,\"totalUnits\":2,\"completedUnitIndexes\":[0]}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.completedUnitIndexes[0]").value(0));
+        mockMvc.perform(get("/api/content-items/{contentId}/attempts", contentId))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)));
+        mockMvc.perform(get("/api/learning-folders/{folderId}/progress", folderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.startedCount").value(1))
+                .andExpect(jsonPath("$.completedCount").value(0));
+    }
 }

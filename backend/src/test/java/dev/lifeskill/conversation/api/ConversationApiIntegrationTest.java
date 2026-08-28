@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -254,5 +255,21 @@ class ConversationApiIntegrationTest {
                         .header("Idempotency-Key", "unknown-draft"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SKILL_DRAFT_NOT_FOUND"));
+    }
+
+    @Test
+    void listsRecentConversationsAndDeletesAnExactConversation() throws Exception {
+        String location = mockMvc.perform(post("/api/conversations"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getHeader("Location");
+        String conversationId = location.substring(location.lastIndexOf('/') + 1);
+
+        mockMvc.perform(get("/api/conversations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").exists())
+                .andExpect(jsonPath("$[0].messageCount").isNumber());
+        mockMvc.perform(delete("/api/conversations/{conversationId}", conversationId))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/conversations/{conversationId}", conversationId))
+                .andExpect(status().isNotFound());
     }
 }

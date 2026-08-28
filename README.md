@@ -1,6 +1,6 @@
-# LifeSkill Hub
+# LifeSkill Console
 
-LifeSkill Hub 是一个以聊天为入口的个人能力中枢。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习卡片、文章、测验和实践。
+LifeSkill Console（仓库名保留 `lifeskill-hub`）是一个以聊天为入口的个人研究与学习控制台。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习路径、文章、测验和实践记录。
 
 当前仓库已完成两条可用的 M2 纵向闭环：`Java Agent Weekly` 从 Spring AI 官方 Release 生成可靠动态与学习内容；一次性黄金研究从 World Gold Council 官方研究生成带 Evidence ID 的核验报告。电影票库存、锁座和支付尚未接入，系统会明确拦截而不会伪装执行。
 
@@ -42,13 +42,13 @@ lifeskill-hub/
 
 ## 本地启动
 
-Windows 可直接双击根目录 `start.cmd`，或运行：
+Windows 可直接双击根目录 `start.cmd`。在 VS Code 中打开仓库后，也可以打开集成终端（PowerShell）直接运行：
 
 ```powershell
 .\start.ps1
 ```
 
-启动器会检查 PostgreSQL、`.env`、DeepSeek 配置，按需启动前后端并打开浏览器。日志保存在被 Git 忽略的 `.lifeskill-runtime/`。停止开发服务可运行 `.\stop.ps1`。
+启动器会检查 PostgreSQL、`.env`、DeepSeek 配置，自动执行 Flyway、按需启动前后端并打开浏览器。看到 `LifeSkill Hub is ready: http://localhost:5173` 即可使用。日志保存在被 Git 忽略的 `.lifeskill-runtime/`。停止开发服务可运行 `.\stop.ps1`。
 
 下面仍保留分步启动方式，便于排查单个服务。
 
@@ -72,6 +72,7 @@ cd backend
 核心 API：
 
 - `POST /api/conversations`：创建对话
+- `GET /api/conversations`、`DELETE /api/conversations/{id}`：恢复和管理对话记录
 - `POST /api/conversations/{id}/messages`：保存消息、识别意图并按需生成 Skill 草案
 - `GET /api/conversations/{id}`：读取对话历史和待确认 Skill 草案
 - `GET /api/skills`、`PATCH /api/skills/{id}`：管理、暂停、恢复和修改 Skill
@@ -79,6 +80,8 @@ cd backend
 - `GET /api/skill-runs/{id}`、`GET /api/skill-runs/{id}/events`：读取结果和 SSE 事件
 - `GET /api/pulse-items`、`GET /api/pulse-items/{id}/evidence`：读取可靠动态和 Evidence
 - `POST /api/pulse-items/{id}/learning-folder`：幂等生成学习文件夹、路径、文章和测验
+- `GET /api/learning-folders/{id}/progress`：读取学习文件夹进度
+- `POST /api/content-items/{id}/attempts`：保存路径进度、阅读完成或测验结果
 
 ### 3. 前端
 

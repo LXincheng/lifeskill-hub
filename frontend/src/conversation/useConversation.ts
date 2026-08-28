@@ -4,15 +4,18 @@ import {
   ConversationApiError,
   confirmSkillDraft,
   createConversation,
+  deleteConversation,
   getConversation,
+  listConversations,
   sendConversationMessage,
 } from './conversationApi'
-import type { Conversation, ConversationMessage } from './conversationApi'
+import type { Conversation, ConversationMessage, ConversationSummary } from './conversationApi'
 
 const ACTIVE_CONVERSATION_KEY = 'lifeskill.activeConversationId'
 
 export type ConversationState = {
   conversation: Conversation | null
+  conversations: ConversationSummary[]
   error: string | null
   isLoading: boolean
   isSending: boolean
@@ -20,12 +23,15 @@ export type ConversationState = {
   confirmingDraftId: string | null
   reloadConversation: () => Promise<void>
   startNewConversation: () => Promise<void>
+  selectConversation: (conversationId: string) => Promise<void>
+  removeConversation: (conversationId: string) => Promise<void>
   sendMessage: (content: string) => Promise<boolean>
   confirmDraft: (draftId: string) => Promise<boolean>
 }
 
 export function useConversation(): ConversationState {
   const [conversation, setConversation] = useState<Conversation | null>(null)
+  const [conversations, setConversations] = useState<ConversationSummary[]>([])
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
@@ -39,18 +45,44 @@ export function useConversation(): ConversationState {
     setConversation(nextConversation)
   }, [])
 
+  const refreshSummaries = useCallback(async () => {
+    setConversations(await listConversations())
+  }, [])
+
   const startNewConversation = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     setPendingMessage(null)
     try {
       rememberConversation(await createConversation())
+      await refreshSummaries()
     } catch {
       setError('无法创建对话，请确认后端已启动后重试。')
     } finally {
       setIsLoading(false)
     }
+  }, [refreshSummaries, rememberConversation])
+
+  const selectConversation = useCallback(async (conversationId: string) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      rememberConversation(await getConversation(conversationId))
+    } catch {
+      setError('无法打开这段对话，请稍后重试。')
+    } finally {
+      setIsLoading(false)
+    }
   }, [rememberConversation])
+
+  const removeConversation = useCallback(async (conversationId: string) => {
+    await deleteConversation(conversationId)
+    const remaining = (await listConversations()).filter((item) => item.id !== conversationId)
+    setConversations(remaining)
+    if (conversation?.id !== conversationId) return
+    if (remaining[0]) await selectConversation(remaining[0].id)
+    else await startNewConversation()
+  }, [conversation?.id, selectConversation, startNewConversation])
 
   const reloadConversation = useCallback(async () => {
     setIsLoading(true)
@@ -64,6 +96,7 @@ export function useConversation(): ConversationState {
 
     try {
       rememberConversation(await getConversation(conversationId))
+      await refreshSummaries()
     } catch (caughtError) {
       if (caughtError instanceof ConversationApiError && caughtError.status === 404) {
         localStorage.removeItem(ACTIVE_CONVERSATION_KEY)
@@ -74,7 +107,7 @@ export function useConversation(): ConversationState {
     } finally {
       setIsLoading(false)
     }
-  }, [rememberConversation, startNewConversation])
+  }, [refreshSummaries, rememberConversation, startNewConversation])
 
   const sendMessage = useCallback(async (content: string) => {
     if (!conversation || isSending) return false
@@ -92,6 +125,7 @@ export function useConversation(): ConversationState {
     })
     try {
       rememberConversation(await sendConversationMessage(conversation.id, content))
+      await refreshSummaries()
       return true
     } catch {
       setError('消息未发送，请保留内容并重试。')
@@ -100,7 +134,7 @@ export function useConversation(): ConversationState {
       setPendingMessage(null)
       setIsSending(false)
     }
-  }, [conversation, isSending, rememberConversation])
+  }, [conversation, isSending, refreshSummaries, rememberConversation])
 
   const confirmDraft = useCallback(async (draftId: string) => {
     if (!conversation || confirmingDraftId) return false
@@ -130,6 +164,7 @@ export function useConversation(): ConversationState {
 
   return {
     conversation,
+    conversations,
     error,
     isLoading,
     isSending,
@@ -137,6 +172,8 @@ export function useConversation(): ConversationState {
     confirmingDraftId,
     reloadConversation,
     startNewConversation,
+    selectConversation,
+    removeConversation,
     sendMessage,
     confirmDraft,
   }

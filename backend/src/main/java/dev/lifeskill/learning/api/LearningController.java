@@ -18,6 +18,9 @@ import dev.lifeskill.learning.api.dto.ContentItemRequest;
 import dev.lifeskill.learning.api.dto.ContentItemResponse;
 import dev.lifeskill.learning.api.dto.LearningFolderRequest;
 import dev.lifeskill.learning.api.dto.LearningFolderResponse;
+import dev.lifeskill.learning.api.dto.LearningAttemptRequest;
+import dev.lifeskill.learning.api.dto.LearningAttemptResponse;
+import dev.lifeskill.learning.api.dto.LearningProgressResponse;
 import dev.lifeskill.learning.application.LearningApplicationService;
 import dev.lifeskill.learning.domain.ContentItemType;
 import jakarta.validation.Valid;
@@ -60,6 +63,11 @@ public class LearningController {
         return service.listContent(folderId).stream().map(ContentItemResponse::from).toList();
     }
 
+    @GetMapping("/learning-folders/{folderId}/progress")
+    public LearningProgressResponse getProgress(@PathVariable UUID folderId) {
+        return LearningProgressResponse.from(service.getProgress(folderId));
+    }
+
     @PostMapping("/learning-folders/{folderId}/content-items")
     public ResponseEntity<ContentItemResponse> createContent(
             @PathVariable UUID folderId,
@@ -79,6 +87,22 @@ public class LearningController {
             @PathVariable UUID contentId,
             @Valid @RequestBody ContentItemRequest request) {
         return ContentItemResponse.from(service.updateContent(contentId, request.type(), request.title(), request.body()));
+    }
+
+    @GetMapping("/content-items/{contentId}/attempts")
+    public List<LearningAttemptResponse> listAttempts(@PathVariable UUID contentId) {
+        return service.listAttempts(contentId).stream().map(LearningAttemptResponse::from).toList();
+    }
+
+    @PostMapping("/content-items/{contentId}/attempts")
+    public ResponseEntity<LearningAttemptResponse> recordAttempt(
+            @PathVariable UUID contentId,
+            @Valid @RequestBody LearningAttemptRequest request) {
+        var response = LearningAttemptResponse.from(service.recordAttempt(
+                contentId, request.kind(), request.status(), request.completedUnits(), request.totalUnits(),
+                request.completedUnitIndexes()));
+        return ResponseEntity.created(URI.create("/api/content-items/" + contentId + "/attempts/" + response.id()))
+                .body(response);
     }
 
     @DeleteMapping("/content-items/{contentId}")

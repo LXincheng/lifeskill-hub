@@ -101,6 +101,20 @@ public class AgentRunApplicationService {
         return created;
     }
 
+    @Transactional
+    public AgentRunDetails startLearningPlan(UUID conversationId, UUID sourceMessageId, String objective) {
+        Instant now = clock.instant();
+        UUID runId = idGenerator.nextId();
+        repository.createResearch(
+                runId, conversationId, sourceMessageId, objective, ResearchCapability.LEARNING_PLAN.name(),
+                idGenerator.nextId(), MAX_STEPS, now, now.plus(RUN_TIMEOUT));
+        recordStep(runId, "Harness", AgentRunStatus.RECEIVED, "REQUEST_ACCEPTED",
+                "个性化学习请求已保存", "运行已进入受控状态机", null, null, 0L, null);
+        AgentRunDetails created = get(runId);
+        dispatchAfterCommit(runId);
+        return created;
+    }
+
     @Transactional(readOnly = true)
     public AgentRunDetails get(UUID runId) {
         AgentRun run = repository.findRun(runId).orElseThrow(() -> new AgentRunNotFoundException(runId));
@@ -152,6 +166,10 @@ public class AgentRunApplicationService {
             String objective = researchRun ? initial.objective() : skills.get(initial.skillId()).version().objective();
             ResearchCapability capability = researchRun
                     ? ResearchCapability.valueOf(initial.capability()) : ResearchCapability.detect(objective);
+            if (capability.isLearningPlan()) {
+                executeLearningPlan(runId, objective, runStarted);
+                return;
+            }
             if (!capability.isRunnableResearch()) {
                 throw new IllegalStateException("Skill objective has no registered source adapter");
             }
@@ -252,6 +270,24 @@ public class AgentRunApplicationService {
             }
             finish(runId, status, runStarted, summary);
         }
+    }
+
+    private void executeLearningPlan(UUID runId, String objective, long runStarted) {
+        step(runId, "Planner", AgentRunStatus.PLANNING, "LEARNING_GOAL_STRUCTURED",
+                "用户学习目标", "已拆分学习范围、顺序和可验证成果", null, null, () -> objective);
+        AgentModelPort.LearningResult plan = step(
+                runId, "Curriculum Designer", AgentRunStatus.COMPOSING, "LEARNING_BUNDLE_COMPOSED",
+                "仅使用明确目标生成结构化内容", "学习路径、导读文章与测验已生成",
+                "deepseek-learning-composer", null, () -> model.composePersonalLearning(objective));
+        recordStep(runId, "Java Learning Gate", AgentRunStatus.POLICY_CHECK, "LEARNING_CONTENT_ALLOWED",
+                "确定性检查路径步骤和测验答案结构", "学习内容符合可保存格式", null, null, 0L, null);
+        var bundle = learning.createPlannedBundle(runId, plan);
+        UUID pathId = bundle.contentItems().stream()
+                .filter(item -> item.type() == dev.lifeskill.learning.domain.ContentItemType.LEARNING_PATH)
+                .map(dev.lifeskill.learning.domain.ContentItem::id)
+                .findFirst().orElseThrow();
+        repository.attachResultContent(runId, pathId);
+        finish(runId, AgentRunStatus.COMPLETED, runStarted, null);
     }
 
     private OfficialSourcePort sourceFor(ResearchCapability capability) {

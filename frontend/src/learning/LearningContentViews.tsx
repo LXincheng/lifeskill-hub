@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
+import { listAttempts, recordAttempt } from './learningApi'
 import type { ContentItem, ContentItemType } from './learningApi'
 
 export const contentTypeConfig: Record<ContentItemType, { label: string; group: string; icon: IconName; tone: string }> = {
@@ -19,14 +20,14 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-export function LearningContentViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
-  if (item.type === 'REPORT') return <ProfessionalReportReader item={item} onEdit={onEdit} />
-  if (item.type === 'LEARNING_PATH' || item.type === 'CHECKLIST') return <PathViewer item={item} onEdit={onEdit} />
-  if (item.type === 'QUIZ') return <QuizViewer item={item} onEdit={onEdit} />
-  return <ArticleReader item={item} onEdit={onEdit} />
+export function LearningContentViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
+  if (item.type === 'REPORT') return <ProfessionalReportReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
+  if (item.type === 'LEARNING_PATH' || item.type === 'CHECKLIST') return <PathViewer item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
+  if (item.type === 'QUIZ') return <QuizViewer item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
+  return <ArticleReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
 }
 
-function ProfessionalReportReader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
+function ProfessionalReportReader({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
   const sections = item.body.split(/^##\s+/m)
   const lead = sections.shift()?.trim().replace(/^>\s*/, '') ?? ''
   return <article className="content-view professional-report">
@@ -37,6 +38,7 @@ function ProfessionalReportReader({ item, onEdit }: { item: ContentItem; onEdit?
       const body = bodyLines.join('\n').trim()
       return <section key={`${heading}-${index}`}><h2><em>{String(index + 1).padStart(2, '0')}</em><span>{heading.replace(/^\d+\s*/, '')}</span></h2>{renderReportBody(body, index)}</section>
     })}</div>
+    <CompletionControl item={item} onProgressChange={onProgressChange} />
     <footer className="report-disclaimer"><strong>口径说明</strong><span>报告只复述并整理已保存的官方 Evidence；市场信息具有时效性，请在决策前重新核验。</span></footer>
   </article>
 }
@@ -58,9 +60,9 @@ function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit?: () => voi
   return <header className="content-header"><div className="content-meta"><span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span><span>{config.label} · 更新于 {formatDate(item.updatedAt)}</span></div>{onEdit && <button className="secondary-button" onClick={onEdit}><Icon name="pencil" size={15} />编辑</button>}</header>
 }
 
-function ArticleReader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
+function ArticleReader({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
   const blocks = item.body.split('```')
-  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : renderArticleText(block, index))}</div></article>
+  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : renderArticleText(block, index))}</div><CompletionControl item={item} onProgressChange={onProgressChange} /></article>
 }
 
 function renderArticleText(block: string, blockIndex: number) {
@@ -75,7 +77,7 @@ function renderArticleText(block: string, blockIndex: number) {
   })
 }
 
-function PathViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
+function PathViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
   const lines = item.body.split('\n').map((line) => line.trim()).filter(Boolean)
   const headingIndexes = lines.map((line, index) => /^#{1,3}\s*步骤\s*\d+/i.test(line) ? index : -1).filter((index) => index >= 0)
   const rawSteps = headingIndexes.length > 0 ? headingIndexes.map((start, index) => {
@@ -83,9 +85,20 @@ function PathViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }
     return lines.slice(start, end).join(' ').replace(/^#{1,3}\s*/, '')
   }) : lines
   const steps = rawSteps.map((line) => ({ done: /^\[x\]/i.test(line), text: line.replace(/^\[(?:x| )\]\s*/i, '').replace(/^[-*\d.]+\s*/, '') }))
-  const completed = steps.filter((step) => step.done).length
-  const currentIndex = steps.findIndex((step) => !step.done)
-  return <article className="content-view path-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><p className="content-intro">按顺序推进，每完成一步就在编辑页使用 [x] 标记。</p><div className="path-progress"><span><strong>{completed}</strong> / {steps.length} 已完成</span><i><b style={{ width: `${steps.length ? completed / steps.length * 100 : 0}%` }} /></i></div><div className="timeline">{steps.map((step, index) => <div className={step.done ? 'timeline-step done' : index === currentIndex ? 'timeline-step current' : 'timeline-step'} key={`${step.text}-${index}`}><span className="timeline-marker">{step.done ? <Icon name="check" size={14} /> : index + 1}</span><div><small>{step.done ? '已完成' : index === currentIndex ? '当前步骤' : '待开始'}</small><strong>{step.text}</strong></div></div>)}</div></article>
+  const [completedIndexes, setCompletedIndexes] = useState<number[]>(steps.map((step, index) => step.done ? index : -1).filter((index) => index >= 0))
+  useEffect(() => { void listAttempts(item.id).then((attempts) => {
+    const latest = attempts.find((attempt) => attempt.kind === 'PROGRESS')
+    if (latest) setCompletedIndexes(latest.completedUnitIndexes)
+  }) }, [item.id])
+  const completed = completedIndexes.length
+  const currentIndex = steps.findIndex((_, index) => !completedIndexes.includes(index))
+  async function toggleStep(index: number) {
+    const next = completedIndexes.includes(index) ? completedIndexes.filter((value) => value !== index) : [...completedIndexes, index].sort((a, b) => a - b)
+    setCompletedIndexes(next)
+    await recordAttempt(item.id, { kind: 'PROGRESS', status: next.length === steps.length ? 'COMPLETED' : 'IN_PROGRESS', completedUnits: next.length, totalUnits: steps.length, completedUnitIndexes: next })
+    onProgressChange?.()
+  }
+  return <article className="content-view path-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><p className="content-intro">按顺序推进。点击步骤即可记录完成状态，刷新后仍会保留。</p><div className="path-progress"><span><strong>{completed}</strong> / {steps.length} 已完成</span><i><b style={{ width: `${steps.length ? completed / steps.length * 100 : 0}%` }} /></i></div><div className="timeline">{steps.map((step, index) => { const done = completedIndexes.includes(index); return <button className={done ? 'timeline-step done' : index === currentIndex ? 'timeline-step current' : 'timeline-step'} key={`${step.text}-${index}`} onClick={() => void toggleStep(index)}><span className="timeline-marker">{done ? <Icon name="check" size={14} /> : index + 1}</span><div><small>{done ? '已完成' : index === currentIndex ? '当前步骤' : '待开始'}</small><strong>{step.text}</strong></div></button> })}</div></article>
 }
 
 type QuizQuestion = { prompt: string; options: string[]; answer: number }
@@ -114,27 +127,54 @@ function parseQuiz(body: string): QuizQuestion[] {
   }).filter((question) => question.prompt && question.options.length >= 2 && question.answer >= 0 && question.answer < question.options.length)
 }
 
-function QuizViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
-  const questions = useMemo(() => parseQuiz(item.body), [item.body])
+function QuizViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
+  const parsedQuestions = useMemo(() => parseQuiz(item.body), [item.body])
+  const [questions, setQuestions] = useState(parsedQuestions)
   const [current, setCurrent] = useState(0)
   const [selected, setSelected] = useState<number | null>(null)
   const [correctCount, setCorrectCount] = useState(0)
   const [isComplete, setIsComplete] = useState(false)
+  useEffect(() => { setQuestions(shuffleQuestions(parsedQuestions)); setCurrent(0); setSelected(null); setCorrectCount(0); setIsComplete(false) }, [item.id, parsedQuestions])
 
   if (questions.length === 0) return <article className="content-view quiz-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="quiz-format-empty"><Icon name="file-question" size={24} /><strong>还没有可识别的题目</strong><p>请编辑内容，按“题目、- 选项、答案: 1”的格式填写。</p></div></article>
 
   const question = questions[current]
   const score = Math.round(correctCount / questions.length * 100)
 
-  function handleNext() {
+  async function handleNext() {
     if (selected === null) return
     const nextCorrectCount = correctCount + (selected === question.answer ? 1 : 0)
     setCorrectCount(nextCorrectCount)
-    if (current === questions.length - 1) setIsComplete(true)
+    if (current === questions.length - 1) {
+      setIsComplete(true)
+      await recordAttempt(item.id, { kind: 'QUIZ', status: 'COMPLETED', completedUnits: nextCorrectCount, totalUnits: questions.length, completedUnitIndexes: [] })
+      onProgressChange?.()
+    }
     else { setCurrent((value) => value + 1); setSelected(null) }
   }
 
-  function handleRestart() { setCurrent(0); setSelected(null); setCorrectCount(0); setIsComplete(false) }
+  function handleRestart() { setQuestions(shuffleQuestions(parsedQuestions)); setCurrent(0); setSelected(null); setCorrectCount(0); setIsComplete(false) }
 
-  return <article className="content-view quiz-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1>{isComplete ? <div className="quiz-result"><span>{score}</span><strong>测验完成</strong><p>答对 {correctCount} / {questions.length} 题</p><button className="primary-button" onClick={handleRestart}>再做一次</button></div> : <div className="quiz-card"><div className="quiz-progress"><span>第 {current + 1} 题 / 共 {questions.length} 题</span><i><b style={{ width: `${current / questions.length * 100}%` }} /></i></div><h2>{question.prompt}</h2><div className="quiz-options">{question.options.map((option, index) => <button className={selected === index ? 'selected' : ''} key={option} onClick={() => setSelected(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div><button className="primary-button quiz-next" disabled={selected === null} onClick={handleNext}>{current === questions.length - 1 ? '提交测验' : '下一题'}</button></div>}</article>
+  return <article className="content-view quiz-viewer"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1>{isComplete ? <div className="quiz-result"><span>{score}</span><strong>测验完成</strong><p>答对 {correctCount} / {questions.length} 题 · 结果已保存</p><button className="primary-button" onClick={handleRestart}>随机再测一次</button></div> : <div className="quiz-card"><div className="quiz-progress"><span>第 {current + 1} 题 / 共 {questions.length} 题</span><i><b style={{ width: `${current / questions.length * 100}%` }} /></i></div><h2>{question.prompt}</h2><div className="quiz-options">{question.options.map((option, index) => <button className={selected === index ? 'selected' : ''} key={option} onClick={() => setSelected(index)}><span>{String.fromCharCode(65 + index)}</span>{option}</button>)}</div><button className="primary-button quiz-next" disabled={selected === null} onClick={() => void handleNext()}>{current === questions.length - 1 ? '提交测验' : '下一题'}</button></div>}</article>
+}
+
+function shuffleQuestions(questions: QuizQuestion[]) {
+  const shuffled = [...questions]
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    const current = shuffled[index]
+    shuffled[index] = shuffled[target]
+    shuffled[target] = current
+  }
+  return shuffled
+}
+
+function CompletionControl({ item, onProgressChange }: { item: ContentItem; onProgressChange?: () => void }) {
+  const [completed, setCompleted] = useState(false)
+  useEffect(() => { void listAttempts(item.id).then((attempts) => setCompleted(attempts.some((attempt) => attempt.kind === 'PROGRESS' && attempt.status === 'COMPLETED'))) }, [item.id])
+  return <button className={completed ? 'reading-complete completed' : 'reading-complete'} disabled={completed} onClick={async () => {
+    await recordAttempt(item.id, { kind: 'PROGRESS', status: 'COMPLETED', completedUnits: 1, totalUnits: 1, completedUnitIndexes: [0] })
+    setCompleted(true)
+    onProgressChange?.()
+  }}><Icon name={completed ? 'check-circle' : 'bookmark'} size={17} />{completed ? '已完成阅读' : '标记为已读'}</button>
 }

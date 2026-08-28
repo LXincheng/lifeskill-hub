@@ -98,8 +98,8 @@ export function ChatPage({ state, onManageSkill, onOpenReport }: ChatPageProps) 
             <div className="chat-empty">
               <header className="chat-greeting">
                 <span>{workspaceCopy.consoleEyebrow} · {formatDate()}</span>
-                <h1>{greeting}，今天想推进什么？</h1>
-                <p>{workspaceCopy.consoleTitle}</p>
+                <h1>{greeting}。{workspaceCopy.consoleTitle}</h1>
+                <p>{workspaceCopy.consoleDescription}</p>
               </header>
 
               <div className="capability-console">{workspaceCopy.capabilities.map((capability) => <div key={capability.label}><span className={capability.tone}><i />{capability.status}</span><strong>{capability.label}</strong><small>{capability.detail}</small></div>)}</div>

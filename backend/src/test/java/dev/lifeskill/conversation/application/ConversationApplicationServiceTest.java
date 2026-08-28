@@ -8,6 +8,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import dev.lifeskill.conversation.application.port.ConversationRepository;
 import dev.lifeskill.conversation.domain.Conversation;
+import dev.lifeskill.conversation.domain.ConversationSummary;
 import dev.lifeskill.shared.application.IdGenerator;
 
 class ConversationApplicationServiceTest {
@@ -60,6 +62,16 @@ class ConversationApplicationServiceTest {
         @Override
         public Optional<Conversation> findById(UUID conversationId) {
             return Optional.ofNullable(conversations.get(conversationId));
+        }
+
+        @Override
+        public List<ConversationSummary> findSummaries() {
+            return List.of();
+        }
+
+        @Override
+        public void deleteById(UUID conversationId) {
+            conversations.remove(conversationId);
         }
     }
 }

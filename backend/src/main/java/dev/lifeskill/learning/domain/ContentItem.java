@@ -31,6 +31,12 @@ public record ContentItem(
     }
 
     public ContentItem update(ContentItemType nextType, String nextTitle, String nextBody, Instant changedAt) {
+        // 人工改写后，原来的官方核验只能证明旧版本；必须降级标记，避免编辑后的内容继续冒充已核验事实。
+        String nextVerificationStatus = switch (verificationStatus) {
+            case "VERIFIED" -> "PARTIALLY_VERIFIED";
+            case "AI_GENERATED" -> "USER_AUTHORED";
+            default -> verificationStatus;
+        };
         return new ContentItem(
                 id,
                 folderId,
@@ -38,7 +44,7 @@ public record ContentItem(
                 nextType == null ? type : nextType,
                 nextTitle == null ? title : nextTitle,
                 nextBody == null ? body : nextBody,
-                verificationStatus,
+                nextVerificationStatus,
                 createdAt,
                 Objects.requireNonNull(changedAt, "Content item update time is required"));
     }

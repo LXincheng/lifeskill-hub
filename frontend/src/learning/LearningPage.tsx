@@ -4,9 +4,9 @@ import type { FormEvent, ReactNode } from 'react'
 import { Icon } from '../components/Icon'
 import {
   createContent, createFolder, deleteContent, deleteFolder,
-  listContent, listFolders, updateContent, updateFolder,
+  getLearningProgress, listContent, listFolders, updateContent, updateFolder,
 } from './learningApi'
-import type { ContentItem, ContentItemType, LearningFolder } from './learningApi'
+import type { ContentItem, ContentItemType, LearningFolder, LearningProgress } from './learningApi'
 import { LearningContentViewer, contentTypeConfig, contentTypeOrder } from './LearningContentViews'
 
 type EditorState =
@@ -32,6 +32,7 @@ export function LearningPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [progress, setProgress] = useState<LearningProgress | null>(null)
 
   const selectedFolder = folders.find((folder) => folder.id === selectedFolderId) ?? null
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null
@@ -65,11 +66,15 @@ export function LearningPage() {
     }
   }, [])
 
+  const loadProgress = useCallback(async (folderId: string) => {
+    try { setProgress(await getLearningProgress(folderId)) } catch { setProgress(null) }
+  }, [])
+
   useEffect(() => { void loadFolders() }, [loadFolders])
   useEffect(() => {
-    if (selectedFolderId) void loadItems(selectedFolderId)
-    else { setItems([]); setSelectedItemId(null) }
-  }, [loadItems, selectedFolderId])
+    if (selectedFolderId) { void loadItems(selectedFolderId); void loadProgress(selectedFolderId) }
+    else { setItems([]); setSelectedItemId(null); setProgress(null) }
+  }, [loadItems, loadProgress, selectedFolderId])
 
   function handleSelectFolder(folderId: string) {
     setSelectedFolderId(folderId)
@@ -204,6 +209,7 @@ export function LearningPage() {
         {selectedFolder && (
           <div className="folder-summary">
             <p>{selectedFolder.description || '用于沉淀可复习、可继续编辑的学习内容。'}</p>
+            {progress && <div className="learning-progress-summary"><span><strong>{progress.completionPercent}%</strong><small>整体进度</small></span><i><b style={{ width: `${progress.completionPercent}%` }} /></i><span><small>{progress.completedCount} / {progress.contentCount} 份完成{progress.averageQuizScore !== null ? ` · 测验均分 ${progress.averageQuizScore}` : ''}</small></span></div>}
             <button onClick={() => handleOpenEditor({ kind: 'folder', target: selectedFolder })}><Icon name="pencil" size={14} />编辑文件夹</button>
           </div>
         )}
@@ -267,7 +273,7 @@ export function LearningPage() {
         ) : selectedItem ? (
           <>
             <MobileBack label={selectedFolder?.name ?? '文件列表'} onClick={() => setMobileLevel('files')} />
-            <LearningContentViewer item={selectedItem} onEdit={() => handleOpenEditor({ kind: 'content', target: selectedItem })} />
+            <LearningContentViewer item={selectedItem} onEdit={() => handleOpenEditor({ kind: 'content', target: selectedItem })} onProgressChange={() => selectedFolderId && void loadProgress(selectedFolderId)} />
           </>
         ) : (
           <div className="content-placeholder">

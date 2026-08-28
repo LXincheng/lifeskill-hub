@@ -1,6 +1,7 @@
 package dev.lifeskill.conversation.infrastructure.persistence;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Repository;
 import dev.lifeskill.conversation.application.port.ConversationRepository;
 import dev.lifeskill.conversation.domain.Conversation;
 import dev.lifeskill.conversation.domain.Message;
+import dev.lifeskill.conversation.domain.ConversationSummary;
 
 @Repository
 class JpaConversationRepository implements ConversationRepository {
@@ -42,6 +44,19 @@ class JpaConversationRepository implements ConversationRepository {
     @Override
     public Optional<Conversation> findById(UUID conversationId) {
         return repository.findById(conversationId).map(this::toDomain);
+    }
+
+    @Override
+    public List<ConversationSummary> findSummaries() {
+        return repository.findAllByOrderByUpdatedAtDesc().stream()
+                .map(entity -> new ConversationSummary(
+                        entity.id(), entity.title(), entity.messages().size(), entity.createdAt(), entity.updatedAt()))
+                .toList();
+    }
+
+    @Override
+    public void deleteById(UUID conversationId) {
+        repository.deleteById(conversationId);
     }
 
     private MessageEntity toEntity(Message message) {

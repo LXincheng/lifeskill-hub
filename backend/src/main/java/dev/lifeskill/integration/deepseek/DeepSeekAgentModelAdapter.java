@@ -25,6 +25,10 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
     private final ChatClient learningPathComposer;
     private final ChatClient learningArticleComposer;
     private final ChatClient learningQuizComposer;
+    private final ChatClient personalLearningComposer;
+    private final ChatClient personalPathComposer;
+    private final ChatClient personalArticleComposer;
+    private final ChatClient personalQuizComposer;
     private final ObjectMapper objectMapper;
 
     public DeepSeekAgentModelAdapter(ChatClient.Builder builder, ObjectMapper objectMapper) {
@@ -76,6 +80,25 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
                 你是测验 Composer。只根据已核验 Claim 和官方 Evidence 返回 title 与 body。
                 body 包含 3 道选择题。每题严格使用四行：题目、两个以“- ”开头的选项、“答案: 1”或“答案: 2”；
                 题与题之间只用一行“---”分隔。不得增加标题或统一答案区，不得扩写材料外事实，不输出思维链。
+                """).build();
+        this.personalLearningComposer = builder.clone().defaultSystem("""
+                你是个人课程设计师。根据用户学习目标返回简洁的 folderName 和 folderDescription。
+                不查询或声称掌握最新外部事实，内容使用中文，不输出思维链。
+                """).build();
+        this.personalPathComposer = builder.clone().defaultSystem("""
+                你是学习路径设计师。根据用户目标返回 title 和 body。
+                body 必须由 4-8 行组成，每行严格使用“[ ] 一项清晰任务”，覆盖理解、实践和复盘。
+                不查询或编造最新外部事实，使用中文，不输出思维链。
+                """).build();
+        this.personalArticleComposer = builder.clone().defaultSystem("""
+                你是学习导读作者。根据用户目标返回 title 和 body。
+                body 是一篇结构清楚的起步指南，可使用“## ”二级标题，但不得编造版本、价格、日期或来源。
+                内容使用中文，不输出思维链。
+                """).build();
+        this.personalQuizComposer = builder.clone().defaultSystem("""
+                你是学习测验设计师。根据用户目标返回 title 和 body。
+                body 必须包含 3-5 道选择题；每题由题目、两个以“- ”开头的选项和“答案: 1/2”组成，题间用“---”分隔。
+                内容使用中文，不查询或编造最新外部事实，不输出思维链。
                 """).build();
     }
 
@@ -143,6 +166,29 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
                 quiz.title().trim(), quiz.body().trim());
     }
 
+    @Override
+    public LearningResult composePersonalLearning(String objective) {
+        String input = "学习目标：\n" + objective;
+        FolderResponse folder = call(personalLearningComposer, input, FolderResponse.class);
+        ContentResponse path = call(personalPathComposer, input, ContentResponse.class);
+        ContentResponse article = call(personalArticleComposer, input, ContentResponse.class);
+        ContentResponse quiz = call(personalQuizComposer, input, ContentResponse.class);
+        List<String> values = List.of(
+                folder.folderName(), folder.folderDescription(), path.title(), path.body(),
+                article.title(), article.body(), quiz.title(), quiz.body());
+        values.forEach(value -> requireText(value, "Personal learning field"));
+        long pathUnits = path.body().lines().filter(line -> line.trim().startsWith("[ ]")).count();
+        long quizUnits = java.util.regex.Pattern.compile("(?m)^(?:答案|answer)\\s*[:：]\\s*[12]\\s*$",
+                java.util.regex.Pattern.CASE_INSENSITIVE).matcher(quiz.body()).results().count();
+        if (pathUnits < 4 || pathUnits > 8 || quizUnits < 3 || quizUnits > 5) {
+            throw new IllegalStateException("Personal learning plan does not satisfy the deterministic content contract");
+        }
+        return new LearningResult(
+                folder.folderName().trim(), folder.folderDescription().trim(),
+                path.title().trim(), path.body().trim(), article.title().trim(),
+                article.body().trim(), quiz.title().trim(), quiz.body().trim());
+    }
+
     private <T> T call(ChatClient client, String prompt, Class<T> responseType) {
         try {
             T response = client.prompt().user(prompt).call().entity(responseType, spec -> spec.validateSchema());
@@ -177,4 +223,5 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
     record VerificationResponse(boolean verified, double confidence, String summary, List<String> evidenceIds) {}
     record CompositionResponse(String title, String summary, String category, String recommendationReason) {}
     record ContentResponse(String title, String body) {}
+    record FolderResponse(String folderName, String folderDescription) {}
 }

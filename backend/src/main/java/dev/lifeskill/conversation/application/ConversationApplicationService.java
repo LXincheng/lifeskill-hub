@@ -1,6 +1,7 @@
 package dev.lifeskill.conversation.application;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import dev.lifeskill.conversation.application.port.ConversationRepository;
 import dev.lifeskill.conversation.domain.Conversation;
+import dev.lifeskill.conversation.domain.ConversationSummary;
 import dev.lifeskill.shared.application.IdGenerator;
 
 @Service
@@ -42,6 +44,17 @@ public class ConversationApplicationService {
     @Transactional(readOnly = true)
     public Conversation getConversation(UUID conversationId) {
         return getRequiredConversation(conversationId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ConversationSummary> listConversations() {
+        return conversationRepository.findSummaries();
+    }
+
+    @Transactional
+    public void deleteConversation(UUID conversationId) {
+        getRequiredConversation(conversationId);
+        conversationRepository.deleteById(conversationId);
     }
 
     private Conversation getRequiredConversation(UUID conversationId) {

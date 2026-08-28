@@ -43,6 +43,8 @@ public class ConversationTurnApplicationService {
             "我理解你想持续监控场次和皇帝座，但当前尚未接入正大乐影城的官方场次、库存和锁座工具，因此不能诚实地创建一个会自动抢票的 Skill。这个任务需要：影院只读查询适配器、登录授权、开售前重新核验，以及锁座/下单前由你再次确认；支付不会自动执行。";
     static final String RESEARCH_STARTED_REPLY =
             "已启动一次性官方研究。系统会采集 World Gold Council 最新研究，保存 Evidence，独立核验后生成一份可追溯的专业报告。你可以在下方实时查看步骤，完成后直接打开报告。";
+    static final String LEARNING_PLAN_STARTED_REPLY =
+            "已开始为这个目标设计学习系统。Planner 会拆解目标，Curriculum Designer 生成路径、导读与测验，Java Learning Gate 会在保存前检查结构。完成后可直接进入学习空间并持续记录进度。";
 
     private final ConversationApplicationService conversationService;
     private final ConversationCompletionApplicationService completionService;
@@ -82,6 +84,9 @@ public class ConversationTurnApplicationService {
             ResearchCapability capability = ResearchCapability.detect(sourceMessage.content());
             if (capability == ResearchCapability.TICKET_ASSIST) {
                 return completeUnavailableTicket(conversationId, steps, turnStartedAt);
+            }
+            if (capability.isLearningPlan()) {
+                return startLearningPlan(conversationId, sourceMessage, steps, turnStartedAt);
             }
             // 已接入的官方研究使用确定性路由，避免模型把“做一份报告”误判成闲聊而跳过真实工具链。
             if (capability.isRunnableResearch()
@@ -157,6 +162,24 @@ public class ConversationTurnApplicationService {
                 0, "仅展示最终答复，不包含模型原始思维链"));
         return result(completionService.complete(
                 conversationId, RESEARCH_STARTED_REPLY, Optional.empty(), steps,
+                elapsedMs(turnStartedAt), agentRunId));
+    }
+
+    private ConversationTurnResult startLearningPlan(
+            UUID conversationId,
+            Message sourceMessage,
+            List<ProcessingStep> steps,
+            long turnStartedAt) {
+        steps.add(new ProcessingStep(
+                "PLANNING", "学习目标路由", ProcessingStepStatus.COMPLETED,
+                0, "已匹配个性化学习 Harness，不创建空白模板"));
+        UUID agentRunId = agentRuns.startLearningPlan(
+                conversationId, sourceMessage.id(), sourceMessage.content()).run().id();
+        steps.add(new ProcessingStep(
+                "COMPOSING", "课程设计已排队", ProcessingStepStatus.COMPLETED,
+                0, "AgentRun 已创建；路径、文章与测验会作为同一学习文件夹保存"));
+        return result(completionService.complete(
+                conversationId, LEARNING_PLAN_STARTED_REPLY, Optional.empty(), steps,
                 elapsedMs(turnStartedAt), agentRunId));
     }
 

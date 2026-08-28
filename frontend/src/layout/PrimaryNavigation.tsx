@@ -1,5 +1,6 @@
 import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
+import { workspaceCopy } from '../copy'
 
 export type PrimaryView = 'chat' | 'learning' | 'pulse'
 
@@ -10,10 +11,10 @@ type PrimaryNavigationProps = {
   onNewConversation: () => void
 }
 
-const navigationItems: Array<{ id: PrimaryView; label: string; icon: IconName }> = [
-  { id: 'chat', label: '对话', icon: 'message' },
-  { id: 'learning', label: '学习', icon: 'book' },
-  { id: 'pulse', label: '动态', icon: 'globe' },
+const navigationItems: Array<{ id: PrimaryView; label: string; detail: string; icon: IconName }> = [
+  { id: 'chat', label: '控制台', detail: '对话与 Agent', icon: 'message' },
+  { id: 'pulse', label: '世界动态', detail: '已核验情报', icon: 'globe' },
+  { id: 'learning', label: '学习空间', detail: '计划与知识库', icon: 'book' },
 ]
 
 export function PrimaryNavigation({
@@ -25,7 +26,7 @@ export function PrimaryNavigation({
   return (
     <>
       <aside className="primary-sidebar">
-        <div className="brand-mark" title="LifeSkill Hub">LS</div>
+        <div className="brand-lockup"><span className="brand-mark"><Icon name="sparkles" size={18} /></span><span><strong>{workspaceCopy.productName}</strong><small>{workspaceCopy.productTagline}</small></span></div>
         <button
           aria-label="新对话"
           className="sidebar-action sidebar-new"
@@ -34,7 +35,7 @@ export function PrimaryNavigation({
           title="新对话"
         >
           <Icon name="plus" size={20} />
-          <span>新建</span>
+          <span><strong>新建对话</strong><small>开始研究或学习</small></span>
         </button>
         <nav className="primary-nav" aria-label="主导航">
           {navigationItems.map((item) => (
@@ -46,11 +47,11 @@ export function PrimaryNavigation({
               title={item.label}
             >
               <Icon name={item.icon} size={20} />
-              <span>{item.label}</span>
+              <span><strong>{item.label}</strong><small>{item.detail}</small></span>
             </button>
           ))}
         </nav>
-        <div className="sidebar-footer" aria-label="本地工作区"><span className="workspace-status" /></div>
+        <div className="sidebar-footer" aria-label="本地工作区"><span className="workspace-status" /><span><strong>Local workspace</strong><small>PostgreSQL · DeepSeek</small></span></div>
       </aside>
 
       <nav className="mobile-navigation" aria-label="主导航">

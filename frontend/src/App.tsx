@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { ChatPage } from './conversation/ChatPage'
+import { ConversationDrawer } from './conversation/ConversationDrawer'
 import { useConversation } from './conversation/useConversation'
 import { LearningPage } from './learning/LearningPage'
 import { ReportOverlay } from './learning/ReportOverlay'
@@ -13,6 +14,7 @@ function App() {
   const [view, setView] = useState<PrimaryView>('chat')
   const [managedSkillId, setManagedSkillId] = useState<string | null | undefined>(undefined)
   const [reportContentId, setReportContentId] = useState<string | null>(null)
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const conversationState = useConversation()
   const conversation = conversationState.conversation
 
@@ -39,7 +41,8 @@ function App() {
                 <span>{conversation?.title ?? '新对话'}</span>
               </div>
               <div className="chat-header-actions">
-                <button className="header-skill-button" onClick={() => setManagedSkillId(null)}>Skills</button>
+                <button className="header-skill-button" onClick={() => setIsHistoryOpen(true)}><span>对话记录</span></button>
+                <button className="header-skill-button" onClick={() => setManagedSkillId(null)}>持续任务</button>
                 <span className={conversationState.error ? 'connection-status error' : 'connection-status'}>
                   <i />
                   {conversationState.isLoading ? '正在连接' : conversationState.error ? '连接中断' : '历史已同步'}
@@ -53,6 +56,7 @@ function App() {
         {view === 'learning' && <LearningPage />}
         {view === 'pulse' && <PulsePage onAsk={() => setView('chat')} onLearn={() => setView('learning')} />}
       </main>
+      {isHistoryOpen && <ConversationDrawer state={conversationState} onClose={() => setIsHistoryOpen(false)} />}
       {managedSkillId !== undefined && <SkillsDrawer initialSkillId={managedSkillId} onClose={() => setManagedSkillId(undefined)} />}
       {reportContentId && <ReportOverlay contentId={reportContentId} onClose={() => setReportContentId(null)} />}
     </div>

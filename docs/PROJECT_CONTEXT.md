@@ -27,17 +27,17 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 ## 当前真实能力边界
 
-已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建与管理 Skill、消息执行收据、受控 AgentRun、Spring AI 官方 Release 与 World Gold Council 官方研究采集、Evidence/Claim/Verifier/Policy Gate、可靠动态、一次性专业研究报告，以及从动态生成学习文件夹与文章/路径/测验。
+已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建与管理 Skill、消息执行收据、受控 AgentRun、Spring AI 官方 Release 与 World Gold Council 官方研究采集、Evidence/Claim/Verifier/Policy Gate、可靠动态、一次性专业研究报告、从动态或对话生成学习文件夹与文章/路径/测验，以及学习进度与测验记录。
 
 尚未可用：通知、实时行情适配器、购票查询与写操作 Tool、复杂在线编辑器和跨来源冲突处理。界面与 Agent 不得把这些能力描述为已经执行。
 
 ## UI 方向
 
 - 采用 Figma 新版原型的紧凑工作台结构，减少无意义留白，保留清晰阅读层级和无气泡消息。
-- 工作台采用中性纸白/墨色与少量钴蓝、青绿状态色；长报告使用独立的纸张阅读层和克制的赭红章节强调色，不扩散到主导航。
+- 工作台采用石墨黑控制层、柔和紫色操作强调和青绿可信状态；长报告和学习正文使用独立暖白纸张阅读层与克制的赭红章节强调色。
 - Agent 流程是细线、圆点和短文本，默认折叠，运行时才出现。
 - 避免统计仪表盘、渐变装饰和大面积装饰图标；首屏状态只能来自真实会话数据。
-- 桌面只保留 76px 左侧主导航，移动端使用底部导航；字号、间距、圆角和 Lucide 图标统一由 `docs/DESIGN_SYSTEM.md` 约束。
+- 桌面使用 236px 语义侧栏，中等屏幕收为 82px，移动端使用底部导航；字号、间距、圆角和 Lucide 图标统一由 `docs/DESIGN_SYSTEM.md` 约束。
 - 学习页采用文件夹、文件、内容三级结构，支持学习路径时间线、文章代码块和交互测验视图。
 
 ## 当前 M2 业务切片
@@ -73,6 +73,7 @@ M2 保持两条窄而真实的闭环，不铺设空壳工具：
 - 首个 Source Adapter 固定读取 `spring-projects/spring-ai` 官方 GitHub Releases；Evidence 保存发布时间、采集时间、原始内容和 SHA-256，Claim 必须引用 Evidence ID。
 - Java Policy Gate 在发布动态和生成学习内容前重复检查 Evidence、官方 URL、独立核验状态和置信阈值；学习生成具有数据库级幂等边界。
 - 根目录 `start.cmd` / `start.ps1` 提供 Windows 一键启动与健康检查，`stop.ps1` 只停止当前仓库的前后端进程。
+- 对话历史现可列表、切换和删除；学习目标会进入 Planner → Curriculum Designer → Java Learning Gate 的受控运行，并保存 AI 生成内容。学习进度采用追加式尝试记录，刷新后恢复。
 - 一次性黄金报告不依赖模型意图分类决定是否执行：Java 先匹配已接入能力，再由 Researcher、Verifier 和 Composer 使用 DeepSeek；报告完成后可从聊天直接打开并在刷新后恢复。
 - 电影票请求会被 Capability/Policy 边界拦截；接入官方场次、实时库存、登录授权、锁座和下单 Tool 前不创建虚假 Skill，最终外部写操作与支付仍需人工确认。
 

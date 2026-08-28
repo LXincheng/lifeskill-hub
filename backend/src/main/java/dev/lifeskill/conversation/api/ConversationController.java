@@ -1,10 +1,12 @@
 package dev.lifeskill.conversation.api;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import dev.lifeskill.conversation.api.dto.ConversationResponse;
+import dev.lifeskill.conversation.api.dto.ConversationSummaryResponse;
 import dev.lifeskill.conversation.api.dto.SendMessageRequest;
 import dev.lifeskill.conversation.application.ConversationApplicationService;
 import dev.lifeskill.conversation.application.ConversationTurnApplicationService;
@@ -44,6 +47,11 @@ public class ConversationController {
         return ResponseEntity.created(URI.create("/api/conversations/" + response.id())).body(response);
     }
 
+    @GetMapping
+    public List<ConversationSummaryResponse> listConversations() {
+        return conversationService.listConversations().stream().map(ConversationSummaryResponse::from).toList();
+    }
+
     @GetMapping("/{conversationId}")
     public ConversationResponse getConversation(@PathVariable UUID conversationId) {
         var conversation = conversationService.getConversation(conversationId);
@@ -59,6 +67,12 @@ public class ConversationController {
             @Valid @RequestBody SendMessageRequest request) {
         ConversationTurnResult result = conversationTurnService.sendMessage(conversationId, request.content());
         return ConversationResponse.from(result.conversation(), result.skillDrafts());
+    }
+
+    @DeleteMapping("/{conversationId}")
+    public ResponseEntity<Void> deleteConversation(@PathVariable UUID conversationId) {
+        conversationService.deleteConversation(conversationId);
+        return ResponseEntity.noContent().build();
     }
 
 }

@@ -16,6 +16,8 @@ public interface AgentModelPort {
 
     LearningResult composeLearning(Claim claim, List<Evidence> evidence);
 
+    LearningResult composePersonalLearning(String objective);
+
     record ResearchResult(String statement, List<String> evidenceIds) {
     }
 

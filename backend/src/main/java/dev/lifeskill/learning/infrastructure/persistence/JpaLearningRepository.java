@@ -10,17 +10,21 @@ import org.springframework.stereotype.Repository;
 import dev.lifeskill.learning.application.port.LearningRepository;
 import dev.lifeskill.learning.domain.ContentItem;
 import dev.lifeskill.learning.domain.LearningFolder;
+import dev.lifeskill.learning.domain.LearningAttempt;
 
 @Repository
 class JpaLearningRepository implements LearningRepository {
     private final SpringDataLearningFolderRepository folderRepository;
     private final SpringDataContentItemRepository contentRepository;
+    private final SpringDataLearningAttemptRepository attemptRepository;
 
     JpaLearningRepository(
             SpringDataLearningFolderRepository folderRepository,
-            SpringDataContentItemRepository contentRepository) {
+            SpringDataContentItemRepository contentRepository,
+            SpringDataLearningAttemptRepository attemptRepository) {
         this.folderRepository = folderRepository;
         this.contentRepository = contentRepository;
+        this.attemptRepository = attemptRepository;
     }
 
     @Override
@@ -73,6 +77,26 @@ class JpaLearningRepository implements LearningRepository {
         contentRepository.deleteById(contentId);
     }
 
+    @Override
+    public LearningAttempt saveAttempt(LearningAttempt attempt) {
+        Map<String, Object> result = Map.of("completedUnitIndexes", attempt.completedUnitIndexes());
+        java.math.BigDecimal score = attempt.score() == null ? null : java.math.BigDecimal.valueOf(attempt.score());
+        return toDomain(attemptRepository.save(new LearningAttemptEntity(
+                attempt.id(), attempt.contentItemId(), attempt.kind(), attempt.status(), attempt.completedUnits(),
+                attempt.totalUnits(), score, result, attempt.completedAt(), attempt.createdAt())));
+    }
+
+    @Override
+    public List<LearningAttempt> findAttempts(UUID contentId) {
+        return attemptRepository.findAllByContentItemIdOrderByCreatedAtDesc(contentId).stream().map(this::toDomain).toList();
+    }
+
+    @Override
+    public List<LearningAttempt> findAttemptsForContent(List<UUID> contentIds) {
+        if (contentIds.isEmpty()) return List.of();
+        return attemptRepository.findAllByContentItemIdInOrderByCreatedAtDesc(contentIds).stream().map(this::toDomain).toList();
+    }
+
     private LearningFolder toDomain(LearningFolderEntity entity) {
         return new LearningFolder(entity.id(), entity.name(), entity.description(), entity.createdAt(), entity.updatedAt());
     }
@@ -83,5 +107,16 @@ class JpaLearningRepository implements LearningRepository {
         return new ContentItem(
                 entity.id(), entity.folderId(), entity.sourceSkillRunId(), entity.type(), entity.title(), text,
                 entity.verificationStatus(), entity.createdAt(), entity.updatedAt());
+    }
+
+    private LearningAttempt toDomain(LearningAttemptEntity entity) {
+        Object rawIndexes = entity.result().get("completedUnitIndexes");
+        List<Integer> indexes = rawIndexes instanceof List<?> values
+                ? values.stream().filter(Number.class::isInstance).map(Number.class::cast).map(Number::intValue).toList()
+                : List.of();
+        return new LearningAttempt(
+                entity.id(), entity.contentItemId(), entity.kind(), entity.status(), entity.completedUnits(),
+                entity.totalUnits(), entity.score() == null ? null : entity.score().doubleValue(), indexes,
+                entity.completedAt(), entity.createdAt());
     }
 }

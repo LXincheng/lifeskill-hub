@@ -37,6 +37,7 @@ RECEIVED → PLANNING → COLLECTING → VERIFYING
 - 选择被允许的工具
 - 多来源语义整理
 - Claim 草案与学习内容生成
+- 个性化学习计划生成；其结果标记为 `AI_GENERATED`，与基于 Evidence 的 `VERIFIED` 内容分开
 - 独立上下文的语义核验
 
 ### 2.2 Java Harness 负责
@@ -104,6 +105,7 @@ Flyway 已创建第一批核心表，但存在数据表不等于对应运行能�
 - 路径前缀 `/api`。
 - 聊天流式事件后续使用 SSE；普通配置使用 REST。
 - 所有长期写操作必须设计幂等键；当前 SkillDraft 确认已实现，后续运行、生成和通知接口接入时分别补齐。
+- 学习进度采用追加式 `learning_attempt` 保存，不重写原始 ContentItem。这样既能恢复最新进度，也保留测验历史；读取文件夹时由应用服务聚合最新一次尝试。
 - 错误返回统一 Problem Details。
 - API DTO 与 JPA Entity 分离。
 - 外部模型和来源通过端口/适配器隔离，领域层不依赖具体 SDK。

@@ -51,6 +51,14 @@ export type Conversation = {
   skillDrafts: SkillDraft[]
 }
 
+export type ConversationSummary = {
+  id: string
+  title: string
+  messageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 type ProblemDetails = {
   detail?: string
   code?: string
@@ -110,6 +118,15 @@ export function createConversation(): Promise<Conversation> {
 
 export function getConversation(conversationId: string): Promise<Conversation> {
   return requestConversation(`/api/conversations/${conversationId}`)
+}
+
+export function listConversations(): Promise<ConversationSummary[]> {
+  return request<ConversationSummary[]>('/api/conversations')
+}
+
+export async function deleteConversation(conversationId: string): Promise<void> {
+  const response = await fetch(`/api/conversations/${conversationId}`, { method: 'DELETE' })
+  if (!response.ok) throw new ConversationApiError('删除对话失败。', response.status)
 }
 
 export function sendConversationMessage(conversationId: string, content: string): Promise<Conversation> {

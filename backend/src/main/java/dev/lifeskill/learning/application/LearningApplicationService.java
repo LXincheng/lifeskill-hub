@@ -12,6 +12,9 @@ import dev.lifeskill.learning.application.port.LearningRepository;
 import dev.lifeskill.learning.domain.ContentItem;
 import dev.lifeskill.learning.domain.ContentItemType;
 import dev.lifeskill.learning.domain.LearningFolder;
+import dev.lifeskill.learning.domain.LearningAttempt;
+import dev.lifeskill.learning.domain.LearningAttemptKind;
+import dev.lifeskill.learning.domain.LearningAttemptStatus;
 import dev.lifeskill.shared.application.IdGenerator;
 
 @Service
@@ -68,6 +71,59 @@ public class LearningApplicationService {
     }
 
     @Transactional
+    public LearningAttempt recordAttempt(
+            UUID contentId,
+            LearningAttemptKind kind,
+            LearningAttemptStatus status,
+            int completedUnits,
+            int totalUnits,
+            List<Integer> completedUnitIndexes) {
+        ContentItem content = requireContent(contentId);
+        if (kind == LearningAttemptKind.QUIZ && content.type() != ContentItemType.QUIZ) {
+            throw new IllegalArgumentException("Quiz attempts can only target quiz content");
+        }
+        if (kind == LearningAttemptKind.PROGRESS && content.type() == ContentItemType.QUIZ) {
+            throw new IllegalArgumentException("Quiz progress must be recorded as a quiz attempt");
+        }
+        var now = clock.instant();
+        Double score = kind == LearningAttemptKind.QUIZ
+                ? Math.round(completedUnits * 10_000.0 / totalUnits) / 100.0
+                : null;
+        return repository.saveAttempt(new LearningAttempt(
+                idGenerator.nextId(), contentId, kind, status, completedUnits, totalUnits, score,
+                completedUnitIndexes, status == LearningAttemptStatus.COMPLETED ? now : null, now));
+    }
+
+    @Transactional(readOnly = true)
+    public List<LearningAttempt> listAttempts(UUID contentId) {
+        requireContent(contentId);
+        return repository.findAttempts(contentId);
+    }
+
+    @Transactional(readOnly = true)
+    public LearningProgress getProgress(UUID folderId) {
+        List<ContentItem> content = listContent(folderId);
+        List<LearningAttempt> attempts = repository.findAttemptsForContent(content.stream().map(ContentItem::id).toList());
+        java.util.Map<UUID, LearningAttempt> latest = new java.util.LinkedHashMap<>();
+        attempts.forEach(attempt -> latest.putIfAbsent(attempt.contentItemId(), attempt));
+        int started = latest.size();
+        int completed = (int) latest.values().stream()
+                .filter(attempt -> attempt.status() == LearningAttemptStatus.COMPLETED).count();
+        var quizScores = latest.values().stream()
+                .filter(attempt -> attempt.kind() == LearningAttemptKind.QUIZ && attempt.score() != null)
+                .mapToDouble(LearningAttempt::score).toArray();
+        Double average = quizScores.length == 0 ? null
+                : Math.round(java.util.Arrays.stream(quizScores).average().orElse(0) * 100.0) / 100.0;
+        int completionPercent = content.isEmpty() ? 0 : Math.round(completed * 100f / content.size());
+        java.time.Instant latestActivity = attempts.isEmpty() ? null : attempts.getFirst().createdAt();
+        return new LearningProgress(content.size(), started, completed, completionPercent, average, latestActivity);
+    }
+
+    public record LearningProgress(
+            int contentCount, int startedCount, int completedCount, int completionPercent,
+            Double averageQuizScore, java.time.Instant latestActivityAt) {}
+
+    @Transactional
     public GeneratedLearningBundle createVerifiedBundle(
             UUID sourceRunId,
             String folderName,
@@ -85,6 +141,20 @@ public class LearningApplicationService {
                 verifiedContent(folder.id(), sourceRunId, ContentItemType.LEARNING_PATH, pathTitle, pathBody, now),
                 verifiedContent(folder.id(), sourceRunId, ContentItemType.ARTICLE, articleTitle, articleBody, now),
                 verifiedContent(folder.id(), sourceRunId, ContentItemType.QUIZ, quizTitle, quizBody, now));
+        return new GeneratedLearningBundle(folder, items);
+    }
+
+    @Transactional
+    public GeneratedLearningBundle createPlannedBundle(
+            UUID sourceRunId,
+            dev.lifeskill.agent.application.port.AgentModelPort.LearningResult plan) {
+        var now = clock.instant();
+        LearningFolder folder = repository.saveFolder(new LearningFolder(
+                idGenerator.nextId(), plan.folderName(), plan.folderDescription(), now, now));
+        List<ContentItem> items = List.of(
+                plannedContent(folder.id(), sourceRunId, ContentItemType.LEARNING_PATH, plan.pathTitle(), plan.pathBody(), now),
+                plannedContent(folder.id(), sourceRunId, ContentItemType.ARTICLE, plan.articleTitle(), plan.articleBody(), now),
+                plannedContent(folder.id(), sourceRunId, ContentItemType.QUIZ, plan.quizTitle(), plan.quizBody(), now));
         return new GeneratedLearningBundle(folder, items);
     }
 
@@ -115,6 +185,12 @@ public class LearningApplicationService {
             UUID folderId, UUID sourceRunId, ContentItemType type, String title, String body, java.time.Instant now) {
         return repository.saveContent(new ContentItem(
                 idGenerator.nextId(), folderId, sourceRunId, type, title, body, "VERIFIED", now, now));
+    }
+
+    private ContentItem plannedContent(
+            UUID folderId, UUID sourceRunId, ContentItemType type, String title, String body, java.time.Instant now) {
+        return repository.saveContent(new ContentItem(
+                idGenerator.nextId(), folderId, sourceRunId, type, title, body, "AI_GENERATED", now, now));
     }
 
     public record GeneratedLearningBundle(LearningFolder folder, List<ContentItem> contentItems) {}

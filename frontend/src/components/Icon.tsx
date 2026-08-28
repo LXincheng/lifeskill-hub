@@ -18,6 +18,8 @@ import {
   Filter,
   Folder,
   Globe2,
+  History,
+  LibraryBig,
   ListChecks,
   MessageSquare,
   Pencil,
@@ -59,6 +61,8 @@ export type IconName =
   | 'filter'
   | 'folder'
   | 'globe'
+  | 'history'
+  | 'library'
   | 'list'
   | 'message'
   | 'pencil'
@@ -104,6 +108,8 @@ const icons: Record<IconName, LucideIcon> = {
   filter: Filter,
   folder: Folder,
   globe: Globe2,
+  history: History,
+  library: LibraryBig,
   list: ListChecks,
   message: MessageSquare,
   pencil: Pencil,

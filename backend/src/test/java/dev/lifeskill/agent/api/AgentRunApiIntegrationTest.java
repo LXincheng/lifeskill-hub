@@ -122,6 +122,11 @@ class AgentRunApiIntegrationTest {
         when(model.composeLearning(any(), any())).thenReturn(new AgentModelPort.LearningResult(
                 "Spring AI 官方更新", "来自已核验动态", "学习路径", "1. 阅读 Release\n2. 验证变化",
                 "版本解读", "基于官方 Release 的结构化解读。", "理解测验", "1. 来源是什么？\nA. 官方 Release\nB. 论坛\n答案：A"));
+        when(model.composePersonalLearning(anyString())).thenReturn(new AgentModelPort.LearningResult(
+                "Java Agent 学习系统", "从 Harness 边界到真实工具调用", "四周学习路径",
+                "[ ] 理解模型与 Harness 边界\n[ ] 实现结构化输出\n[ ] 接入只读工具\n[ ] 完成发布门禁",
+                "Java Agent 工程导读", "## 核心边界\n模型负责推理，Java Harness 负责执行、超时与审计。",
+                "边界测验", "谁决定最终写入？\n- 模型\n- Java Harness\n答案: 2"));
         when(model.composeReport(anyString(), any(), any())).thenReturn(new AgentModelPort.ReportResult(
                 "9月黄金市场研究报告",
                 "## 01 核心观点\n- 官方研究结论。\n\n## 06 官方来源\n- Evidence ID"));
@@ -180,6 +185,22 @@ class AgentRunApiIntegrationTest {
                 "select count(*) from content_item where id = ? and type = 'REPORT' and verification_status = 'VERIFIED'",
                 Integer.class, UUID.fromString(contentId));
         org.assertj.core.api.Assertions.assertThat(reports).isEqualTo(1);
+    }
+
+    @Test
+    void buildsPersonalLearningBundleThroughAControlledRun() throws Exception {
+        UUID runId = agentRuns.startLearningPlan(
+                UUID.randomUUID(), UUID.randomUUID(), "为我创建 Java Agent 开发学习路径").run().id();
+
+        String run = waitForTerminalRun(runId.toString());
+        org.assertj.core.api.Assertions.assertThat(JsonPath.<String>read(run, "$.status")).isEqualTo("COMPLETED");
+        org.assertj.core.api.Assertions.assertThat(JsonPath.<String>read(run, "$.capability")).isEqualTo("LEARNING_PLAN");
+        org.assertj.core.api.Assertions.assertThat(JsonPath.<Integer>read(run, "$.stepCount")).isEqualTo(4);
+        String contentId = JsonPath.read(run, "$.resultContentId");
+        Integer plannedItems = jdbc.queryForObject(
+                "select count(*) from content_item where folder_id = (select folder_id from content_item where id = ?) and verification_status = 'AI_GENERATED'",
+                Integer.class, UUID.fromString(contentId));
+        org.assertj.core.api.Assertions.assertThat(plannedItems).isEqualTo(3);
     }
 
     private String waitForTerminalRun(String runId) throws Exception {
