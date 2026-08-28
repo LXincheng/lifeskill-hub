@@ -5,6 +5,7 @@ import type { IconName } from '../components/Icon'
 import type { ContentItem, ContentItemType } from './learningApi'
 
 export const contentTypeConfig: Record<ContentItemType, { label: string; group: string; icon: IconName; tone: string }> = {
+  REPORT: { label: '研究报告', group: '研究报告', icon: 'file', tone: 'red' },
   LEARNING_PATH: { label: '学习路径', group: '学习路径', icon: 'route', tone: 'blue' },
   ARTICLE: { label: '文章', group: '文章', icon: 'file', tone: 'orange' },
   NOTE: { label: '笔记', group: '笔记', icon: 'note', tone: 'purple' },
@@ -12,16 +13,44 @@ export const contentTypeConfig: Record<ContentItemType, { label: string; group: 
   CHECKLIST: { label: '行动清单', group: '行动清单', icon: 'list', tone: 'green' },
 }
 
-export const contentTypeOrder: ContentItemType[] = ['LEARNING_PATH', 'ARTICLE', 'NOTE', 'QUIZ', 'CHECKLIST']
+export const contentTypeOrder: ContentItemType[] = ['REPORT', 'LEARNING_PATH', 'ARTICLE', 'NOTE', 'QUIZ', 'CHECKLIST']
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
 export function LearningContentViewer({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
+  if (item.type === 'REPORT') return <ProfessionalReportReader item={item} onEdit={onEdit} />
   if (item.type === 'LEARNING_PATH' || item.type === 'CHECKLIST') return <PathViewer item={item} onEdit={onEdit} />
   if (item.type === 'QUIZ') return <QuizViewer item={item} onEdit={onEdit} />
   return <ArticleReader item={item} onEdit={onEdit} />
+}
+
+function ProfessionalReportReader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
+  const sections = item.body.split(/^##\s+/m)
+  const lead = sections.shift()?.trim().replace(/^>\s*/, '') ?? ''
+  return <article className="content-view professional-report">
+    <ContentHeader item={item} onEdit={onEdit} />
+    <header className="report-cover"><span>专项研究 · 已核验 · {formatDate(item.updatedAt)}</span><h1>{item.title}</h1><p>{lead}</p><div><small>数据基础</small><strong>World Gold Council 官方研究</strong><small>报告性质</small><strong>条件式研究，不构成投资建议</strong></div></header>
+    <div className="report-sections">{sections.map((section, index) => {
+      const [heading, ...bodyLines] = section.split('\n')
+      const body = bodyLines.join('\n').trim()
+      return <section key={`${heading}-${index}`}><h2><em>{String(index + 1).padStart(2, '0')}</em><span>{heading.replace(/^\d+\s*/, '')}</span></h2>{renderReportBody(body, index)}</section>
+    })}</div>
+    <footer className="report-disclaimer"><strong>口径说明</strong><span>报告只复述并整理已保存的官方 Evidence；市场信息具有时效性，请在决策前重新核验。</span></footer>
+  </article>
+}
+
+function renderReportBody(body: string, sectionIndex: number) {
+  const lines = body.split('\n').map((line) => line.trim()).filter(Boolean)
+  const tableLines = lines.filter((line) => line.startsWith('|'))
+  if (tableLines.length >= 3) {
+    const rows = tableLines.filter((_, index) => index !== 1).map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()))
+    return <div className="report-table-wrap"><table><thead><tr>{rows[0].map((cell) => <th key={cell}>{cell}</th>)}</tr></thead><tbody>{rows.slice(1).map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={`${rowIndex}-${cellIndex}`}>{cellIndex === 2 ? <span className="report-direction">{cell}</span> : cell}</td>)}</tr>)}</tbody></table></div>
+  }
+  const items = lines.filter((line) => /^[-*]\s+|^\d+[.、]\s*/.test(line))
+  if (items.length > 0) return <ol className={sectionIndex === 3 ? 'report-timeline' : 'report-points'}>{items.map((line, index) => <li key={`${line}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><p>{line.replace(/^[-*]\s+|^\d+[.、]\s*/, '')}</p></li>)}</ol>
+  return <div className="report-prose">{body.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
 }
 
 function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {

@@ -51,7 +51,8 @@ class JpaConversationRepository implements ConversationRepository {
                 message.content(),
                 message.createdAt(),
                 message.processingSteps(),
-                message.durationMs());
+                message.durationMs(),
+                message.agentRunId());
     }
 
     private Conversation toDomain(ConversationEntity entity) {
@@ -67,7 +68,8 @@ class JpaConversationRepository implements ConversationRepository {
                                 message.content(),
                                 message.createdAt(),
                                 message.processingSteps(),
-                                message.durationMs()))
+                                message.durationMs(),
+                                message.agentRunId()))
                         .toList());
     }
 }

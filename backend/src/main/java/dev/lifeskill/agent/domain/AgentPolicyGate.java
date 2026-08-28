@@ -34,9 +34,12 @@ public class AgentPolicyGate {
     private boolean isAllowedOfficialUrl(String value) {
         try {
             URI uri = URI.create(value);
-            return "https".equalsIgnoreCase(uri.getScheme())
-                    && "github.com".equalsIgnoreCase(uri.getHost())
+            if (!"https".equalsIgnoreCase(uri.getScheme())) return false;
+            boolean springAi = "github.com".equalsIgnoreCase(uri.getHost())
                     && uri.getPath().startsWith("/spring-projects/spring-ai/");
+            boolean goldhub = "www.gold.org".equalsIgnoreCase(uri.getHost())
+                    && uri.getPath().startsWith("/goldhub/");
+            return springAi || goldhub;
         } catch (IllegalArgumentException exception) {
             return false;
         }

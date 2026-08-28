@@ -21,6 +21,7 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
     private final ChatClient researcher;
     private final ChatClient verifier;
     private final ChatClient composer;
+    private final ChatClient reportComposer;
     private final ChatClient learningPathComposer;
     private final ChatClient learningArticleComposer;
     private final ChatClient learningQuizComposer;
@@ -40,8 +41,27 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
                 """).build();
         this.composer = builder.clone().defaultSystem("""
                 你是 Composer。把已核验 Claim 整理成一条中文动态。
-                title 不超过 80 字，summary 不超过 300 字，category 固定为 Java Agent，
+                title 不超过 80 字，summary 不超过 300 字，category 根据材料使用“Java Agent”或“黄金研究”，
                 recommendationReason 解释这条官方更新为何值得用户阅读。不得增加 Evidence 中没有的事实，不输出思维链。
+                """).build();
+        this.reportComposer = builder.clone().defaultSystem("""
+                你是资深贵金属研究报告 Composer。只使用已核验 Claim 和 World Gold Council 官方 Evidence，
+                输出清晰、克制、可追溯的中文研究报告，不提供个性化投资建议，不预测确定收益。
+                title 使用专业报告标题。body 必须按以下 Markdown 顺序输出：
+                > 一段不超过 180 字的执行摘要
+                ## 01 核心观点
+                3-5 条编号观点，每条包含判断与证据依据
+                ## 02 关键数据与判断
+                Markdown 表格，列为“观察指标 | 最新事实 | 方向 | Evidence”，Evidence 单元格写真实 UUID
+                ## 03 风险提示
+                3-5 条风险，明确什么变化会使当前判断失效
+                ## 04 可验证的观察清单
+                3-6 行“- 日期或窗口 | 事件 | 需要观察什么”
+                ## 05 结论
+                给出条件式结论和下一次复核条件
+                ## 06 官方来源
+                每条写“[Evidence UUID] 标题 | 发布时间 | URL”。
+                不得编造价格、日期、URL、机构观点或 Evidence ID，不输出思维链。
                 """).build();
         this.learningPathComposer = builder.clone().defaultSystem("""
                 你是学习路径 Composer。只根据已核验 Claim 和官方 Evidence 返回 title 与 body。
@@ -89,8 +109,23 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
         requireText(response.title(), "Pulse title");
         requireText(response.summary(), "Pulse summary");
         requireText(response.recommendationReason(), "Recommendation reason");
+        requireText(response.category(), "Pulse category");
+        String category = response.category().trim();
+        if (!List.of("Java Agent", "黄金研究").contains(category)) {
+            throw new IllegalStateException("Pulse category is outside the supported set");
+        }
         return new CompositionResult(
-                response.title().trim(), response.summary().trim(), "Java Agent", response.recommendationReason().trim());
+                response.title().trim(), response.summary().trim(), category, response.recommendationReason().trim());
+    }
+
+    @Override
+    public ReportResult composeReport(String objective, Claim claim, List<Evidence> evidence) {
+        ContentResponse response = call(reportComposer,
+                "研究目标：\n" + objective + "\n已核验 Claim：\n" + claim.statement()
+                        + "\nEvidence：\n" + evidenceJson(evidence), ContentResponse.class);
+        requireText(response.title(), "Report title");
+        requireText(response.body(), "Report body");
+        return new ReportResult(response.title().trim(), response.body().trim());
     }
 
     @Override

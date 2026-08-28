@@ -38,7 +38,8 @@ public record ConversationResponse(
             String content,
             Instant createdAt,
             List<ProcessingStep> processingSteps,
-            Long durationMs) {
+            Long durationMs,
+            UUID agentRunId) {
 
         private static MessageResponse from(Message message) {
             return new MessageResponse(
@@ -47,7 +48,8 @@ public record ConversationResponse(
                     message.content(),
                     message.createdAt(),
                     message.processingSteps(),
-                    message.durationMs());
+                    message.durationMs(),
+                    message.agentRunId());
         }
     }
 

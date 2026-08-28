@@ -11,6 +11,9 @@ public record AgentRunResponse(
         UUID id,
         UUID skillId,
         int skillVersion,
+        UUID conversationId,
+        String capability,
+        UUID resultContentId,
         UUID auditId,
         String triggerType,
         String status,
@@ -26,7 +29,8 @@ public record AgentRunResponse(
     static AgentRunResponse from(AgentRunDetails details) {
         var run = details.run();
         return new AgentRunResponse(
-                run.id(), run.skillId(), run.skillVersion(), run.auditId(), run.triggerType(), run.status().name(),
+                run.id(), run.skillId(), run.skillVersion(), run.conversationId(), run.capability(), run.resultContentId(),
+                run.auditId(), run.triggerType(), run.status().name(),
                 run.maxSteps(), run.stepCount(), run.startedAt(), run.timeoutAt(), run.completedAt(), run.durationMs(),
                 run.failureSummary(), details.steps().stream().map(StepResponse::from).toList());
     }

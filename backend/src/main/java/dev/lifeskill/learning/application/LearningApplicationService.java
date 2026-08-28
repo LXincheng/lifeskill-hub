@@ -88,6 +88,21 @@ public class LearningApplicationService {
         return new GeneratedLearningBundle(folder, items);
     }
 
+    @Transactional
+    public ContentItem createVerifiedReport(UUID sourceRunId, String folderName, String description,
+                                            String reportTitle, String reportBody) {
+        Optional<GeneratedLearningBundle> existing = findVerifiedBundle(sourceRunId);
+        if (existing.isPresent()) {
+            return existing.get().contentItems().stream()
+                    .filter(item -> item.type() == ContentItemType.REPORT)
+                    .findFirst().orElseThrow();
+        }
+        var now = clock.instant();
+        LearningFolder folder = repository.saveFolder(new LearningFolder(
+                idGenerator.nextId(), folderName, description, now, now));
+        return verifiedContent(folder.id(), sourceRunId, ContentItemType.REPORT, reportTitle, reportBody, now);
+    }
+
     @Transactional(readOnly = true)
     public Optional<GeneratedLearningBundle> findVerifiedBundle(UUID sourceRunId) {
         List<ContentItem> items = repository.findContentBySourceRun(sourceRunId);

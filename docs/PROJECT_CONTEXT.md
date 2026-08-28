@@ -27,14 +27,14 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 ## 当前真实能力边界
 
-已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建与管理 Skill、消息执行收据、受控 AgentRun、Spring AI 官方 Release 采集、Evidence/Claim/Verifier/Policy Gate、可靠动态、从动态生成学习文件夹与文章/路径/测验。
+已可用：真实 PostgreSQL、DeepSeek 普通问答与结构化 SkillDraft、确认创建与管理 Skill、消息执行收据、受控 AgentRun、Spring AI 官方 Release 与 World Gold Council 官方研究采集、Evidence/Claim/Verifier/Policy Gate、可靠动态、一次性专业研究报告，以及从动态生成学习文件夹与文章/路径/测验。
 
 尚未可用：通知、实时行情适配器、购票查询与写操作 Tool、复杂在线编辑器和跨来源冲突处理。界面与 Agent 不得把这些能力描述为已经执行。
 
 ## UI 方向
 
 - 采用 Figma 新版原型的紧凑工作台结构，减少无意义留白，保留清晰阅读层级和无气泡消息。
-- 不使用 Claude 陶土色；采用中性纸白/墨色与少量钴蓝、青绿状态色。
+- 工作台采用中性纸白/墨色与少量钴蓝、青绿状态色；长报告使用独立的纸张阅读层和克制的赭红章节强调色，不扩散到主导航。
 - Agent 流程是细线、圆点和短文本，默认折叠，运行时才出现。
 - 避免统计仪表盘、渐变装饰和大面积装饰图标；首屏状态只能来自真实会话数据。
 - 桌面只保留 76px 左侧主导航，移动端使用底部导航；字号、间距、圆角和 Lucide 图标统一由 `docs/DESIGN_SYSTEM.md` 约束。
@@ -42,17 +42,18 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 
 ## 当前 M2 业务切片
 
-只实现“Java Agent Weekly”第一条可靠自动化闭环：
+M2 保持两条窄而真实的闭环，不铺设空壳工具：
 
 - 聊天创建每周关注 Skill。
 - 使用 GitHub/官方文档适配器收集来源。
 - 支持手动运行 Skill，输出带来源的简报，并生成学习路径、文章和测验。
 - 重要结论经过二次核验。
 - 在动态页展示，并可进入 Java Agent 学习文件夹。
+- 在聊天中提出一次性黄金研究后，确定性路由到 World Gold Council 官方适配器，经相同可信管道生成专业报告并在学习文件夹保存。
 
 完成这条闭环后，行情研究、购票辅助等能力通过新的 Source Adapter 或受控 Tool 扩展。涉及实时价格、库存、账号、下单或支付时，必须重新校验数据并要求用户在最终外部写操作前确认。
 
-## 当前工程状态（2026-08-27）
+## 当前工程状态（2026-08-28）
 
 - M0 本地骨架和 M1.1 真实对话骨架已完成：对话与消息领域模型、PostgreSQL 迁移、REST API、React 接入和刷新历史恢复。
 - 前端 typecheck/生产构建和后端领域、应用、HTTP/持久化测试均已通过；后端测试使用 H2 隔离本地数据库差异。
@@ -71,6 +72,9 @@ LifeSkill Hub 是一个以聊天为入口，将用户意图转化为计划、可
 - M2 纵向闭环已完成：`Java Agent Weekly` 可手动或按周运行；Harness 以 8 步上限和 120 秒超时编排 Planner、Researcher、Verifier、Composer，SSE 只发送可核验事件。
 - 首个 Source Adapter 固定读取 `spring-projects/spring-ai` 官方 GitHub Releases；Evidence 保存发布时间、采集时间、原始内容和 SHA-256，Claim 必须引用 Evidence ID。
 - Java Policy Gate 在发布动态和生成学习内容前重复检查 Evidence、官方 URL、独立核验状态和置信阈值；学习生成具有数据库级幂等边界。
+- 根目录 `start.cmd` / `start.ps1` 提供 Windows 一键启动与健康检查，`stop.ps1` 只停止当前仓库的前后端进程。
+- 一次性黄金报告不依赖模型意图分类决定是否执行：Java 先匹配已接入能力，再由 Researcher、Verifier 和 Composer 使用 DeepSeek；报告完成后可从聊天直接打开并在刷新后恢复。
+- 电影票请求会被 Capability/Policy 边界拦截；接入官方场次、实时库存、登录授权、锁座和下单 Tool 前不创建虚假 Skill，最终外部写操作与支付仍需人工确认。
 
 ## 产品形态说明
 

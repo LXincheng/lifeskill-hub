@@ -86,8 +86,9 @@ export function useConversation(): ConversationState {
       role: 'USER',
       content,
       createdAt: new Date().toISOString(),
-      processingSteps: [],
-      durationMs: null,
+        processingSteps: [],
+        durationMs: null,
+        agentRunId: null,
     })
     try {
       rememberConversation(await sendConversationMessage(conversation.id, content))

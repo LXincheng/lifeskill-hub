@@ -34,6 +34,11 @@ public class SpringAiGitHubReleaseAdapter implements OfficialSourcePort {
     }
 
     @Override
+    public String capability() {
+        return "JAVA_OFFICIAL";
+    }
+
+    @Override
     public List<OfficialSourceDocument> collect(Instant fetchedAt) {
         try {
             HttpRequest request = HttpRequest.newBuilder(RELEASES_URI)

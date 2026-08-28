@@ -316,7 +316,7 @@ function ContentEditorForm({
       <button aria-selected={mode === 'preview'} className={mode === 'preview' ? 'active' : ''} onClick={() => setMode('preview')} role="tab" type="button">预览</button>
     </div>
     {mode === 'edit' ? <div className="document-fields">
-      <label>内容类型<select value={type} onChange={(event) => setType(event.target.value as ContentItemType)}><option value="LEARNING_PATH">学习路径</option><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="QUIZ">测验</option><option value="CHECKLIST">行动清单</option></select></label>
+      <label>内容类型<select value={type} onChange={(event) => setType(event.target.value as ContentItemType)}><option value="REPORT">研究报告</option><option value="LEARNING_PATH">学习路径</option><option value="ARTICLE">文章</option><option value="NOTE">笔记</option><option value="QUIZ">测验</option><option value="CHECKLIST">行动清单</option></select></label>
       <label>标题<input autoFocus maxLength={240} onChange={(event) => setTitle(event.target.value)} required value={title} /></label>
       <label>正文<textarea className="document-textarea" maxLength={20000} onChange={(event) => setBody(event.target.value)} required rows={14} value={body} /></label>
       <p className="editor-help">文章支持 ## 二级标题、``` 代码块和独占一行的 ![说明](https://图片地址)；路径可用 [x] 标记完成；测验使用“题目、- 选项、答案: 1”，多题用 --- 分隔。</p>

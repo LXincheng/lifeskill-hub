@@ -49,7 +49,7 @@ public final class Conversation {
     }
 
     public Message addAssistantMessage(UUID messageId, String content, Instant now) {
-        return addAssistantMessage(messageId, content, now, List.of(), null);
+        return addAssistantMessage(messageId, content, now, List.of(), null, null);
     }
 
     public Message addAssistantMessage(
@@ -57,9 +57,10 @@ public final class Conversation {
             String content,
             Instant now,
             List<ProcessingStep> processingSteps,
-            Long durationMs) {
+            Long durationMs,
+            UUID agentRunId) {
         Message message = new Message(
-                messageId, MessageRole.ASSISTANT, content, now, processingSteps, durationMs);
+                messageId, MessageRole.ASSISTANT, content, now, processingSteps, durationMs, agentRunId);
         messages.add(message);
         updatedAt = now;
         return message;

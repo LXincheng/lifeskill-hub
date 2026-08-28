@@ -15,6 +15,9 @@ public interface AgentRunRepository {
     AgentRun create(UUID runId, UUID skillId, int version, UUID auditId, String triggerType,
                     String scheduleSlot, int maxSteps, Instant startedAt, Instant timeoutAt);
 
+    AgentRun createResearch(UUID runId, UUID conversationId, UUID sourceMessageId, String objective,
+                            String capability, UUID auditId, int maxSteps, Instant startedAt, Instant timeoutAt);
+
     Optional<AgentRun> findRun(UUID runId);
 
     Optional<AgentRun> findLatestBySkill(UUID skillId);
@@ -33,6 +36,8 @@ public interface AgentRunRepository {
     Claim updateVerification(UUID claimId, String status, double confidence, String summary, Instant verifiedAt);
 
     void finish(UUID runId, AgentRunStatus status, Instant completedAt, long durationMs, String failureSummary);
+
+    void attachResultContent(UUID runId, UUID contentId);
 
     List<Evidence> findEvidenceForClaim(UUID claimId);
 

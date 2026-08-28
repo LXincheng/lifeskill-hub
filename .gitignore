@@ -1,5 +1,6 @@
 # Secrets
 .env
+.lifeskill-runtime/
 .env.*
 !.env.example
 

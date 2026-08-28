@@ -6,7 +6,7 @@ export type LearningFolder = {
   updatedAt: string
 }
 
-export type ContentItemType = 'LEARNING_PATH' | 'ARTICLE' | 'NOTE' | 'QUIZ' | 'CHECKLIST'
+export type ContentItemType = 'REPORT' | 'LEARNING_PATH' | 'ARTICLE' | 'NOTE' | 'QUIZ' | 'CHECKLIST'
 
 export type ContentItem = {
   id: string
@@ -44,6 +44,7 @@ export const createFolder = (input: FolderInput) => request<LearningFolder>('/ap
 export const updateFolder = (id: string, input: FolderInput) => request<LearningFolder>(`/api/learning-folders/${id}`, json('PATCH', input))
 export const deleteFolder = (id: string) => request<void>(`/api/learning-folders/${id}`, { method: 'DELETE' })
 export const listContent = (folderId: string) => request<ContentItem[]>(`/api/learning-folders/${folderId}/content-items`)
+export const getContent = (id: string) => request<ContentItem>(`/api/content-items/${id}`)
 export const createContent = (folderId: string, input: ContentInput) => request<ContentItem>(`/api/learning-folders/${folderId}/content-items`, json('POST', input))
 export const updateContent = (id: string, input: ContentInput) => request<ContentItem>(`/api/content-items/${id}`, json('PATCH', input))
 export const deleteContent = (id: string) => request<void>(`/api/content-items/${id}`, { method: 'DELETE' })

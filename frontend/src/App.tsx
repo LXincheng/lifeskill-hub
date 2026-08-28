@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { ChatPage } from './conversation/ChatPage'
 import { useConversation } from './conversation/useConversation'
 import { LearningPage } from './learning/LearningPage'
+import { ReportOverlay } from './learning/ReportOverlay'
 import { PrimaryNavigation } from './layout/PrimaryNavigation'
 import type { PrimaryView } from './layout/PrimaryNavigation'
 import { PulsePage } from './pulse/PulsePage'
@@ -11,6 +12,7 @@ import { SkillsDrawer } from './skills/SkillsDrawer'
 function App() {
   const [view, setView] = useState<PrimaryView>('chat')
   const [managedSkillId, setManagedSkillId] = useState<string | null | undefined>(undefined)
+  const [reportContentId, setReportContentId] = useState<string | null>(null)
   const conversationState = useConversation()
   const conversation = conversationState.conversation
 
@@ -44,7 +46,7 @@ function App() {
                 </span>
               </div>
             </header>
-            <ChatPage state={conversationState} onManageSkill={(skillId) => setManagedSkillId(skillId)} />
+            <ChatPage state={conversationState} onManageSkill={(skillId) => setManagedSkillId(skillId)} onOpenReport={setReportContentId} />
           </section>
         )}
 
@@ -52,6 +54,7 @@ function App() {
         {view === 'pulse' && <PulsePage onAsk={() => setView('chat')} onLearn={() => setView('learning')} />}
       </main>
       {managedSkillId !== undefined && <SkillsDrawer initialSkillId={managedSkillId} onClose={() => setManagedSkillId(undefined)} />}
+      {reportContentId && <ReportOverlay contentId={reportContentId} onClose={() => setReportContentId(null)} />}
     </div>
   )
 }

@@ -11,7 +11,8 @@ public record Message(
         String content,
         Instant createdAt,
         List<ProcessingStep> processingSteps,
-        Long durationMs) {
+        Long durationMs,
+        UUID agentRunId) {
 
     public static final int MAX_CONTENT_LENGTH = 4_000;
 
@@ -27,7 +28,7 @@ public record Message(
     }
 
     public Message(UUID id, MessageRole role, String content, Instant createdAt) {
-        this(id, role, content, createdAt, List.of(), null);
+        this(id, role, content, createdAt, List.of(), null, null);
     }
 
     private static String normalizeContent(String content) {

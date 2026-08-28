@@ -2,7 +2,7 @@
 
 LifeSkill Hub 是一个以聊天为入口的个人能力中枢。用户通过自然语言创建计划、执行任务、沉淀 Skill、持续关注感兴趣的动态，并把可靠信息转化为学习卡片、文章、测验和实践。
 
-当前仓库已完成 M2 第一条可靠纵向闭环：聊天确认 `Java Agent Weekly` 后，可从 Spring AI 官方 Release 生成带 Evidence 的动态，并沉淀为学习路径、文章和测验。
+当前仓库已完成两条可用的 M2 纵向闭环：`Java Agent Weekly` 从 Spring AI 官方 Release 生成可靠动态与学习内容；一次性黄金研究从 World Gold Council 官方研究生成带 Evidence ID 的核验报告。电影票库存、锁座和支付尚未接入，系统会明确拦截而不会伪装执行。
 
 ```text
 聊天表达需求
@@ -41,6 +41,16 @@ lifeskill-hub/
 ```
 
 ## 本地启动
+
+Windows 可直接双击根目录 `start.cmd`，或运行：
+
+```powershell
+.\start.ps1
+```
+
+启动器会检查 PostgreSQL、`.env`、DeepSeek 配置，按需启动前后端并打开浏览器。日志保存在被 Git 忽略的 `.lifeskill-runtime/`。停止开发服务可运行 `.\stop.ps1`。
+
+下面仍保留分步启动方式，便于排查单个服务。
 
 ### 1. 数据库
 

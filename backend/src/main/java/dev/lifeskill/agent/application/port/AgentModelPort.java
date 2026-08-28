@@ -12,6 +12,8 @@ public interface AgentModelPort {
 
     CompositionResult compose(String objective, Claim claim, List<Evidence> evidence);
 
+    ReportResult composeReport(String objective, Claim claim, List<Evidence> evidence);
+
     LearningResult composeLearning(Claim claim, List<Evidence> evidence);
 
     record ResearchResult(String statement, List<String> evidenceIds) {
@@ -21,6 +23,9 @@ public interface AgentModelPort {
     }
 
     record CompositionResult(String title, String summary, String category, String recommendationReason) {
+    }
+
+    record ReportResult(String title, String body) {
     }
 
     record LearningResult(

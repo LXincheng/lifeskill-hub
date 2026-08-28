@@ -42,6 +42,20 @@ public class JdbcAgentRunRepository implements AgentRunRepository {
     }
 
     @Override
+    public AgentRun createResearch(
+            UUID runId, UUID conversationId, UUID sourceMessageId, String objective, String capability,
+            UUID auditId, int maxSteps, Instant startedAt, Instant timeoutAt) {
+        jdbc.update("""
+                insert into skill_run (
+                    id, skill_id, skill_version, conversation_id, source_message_id, objective, capability,
+                    status, audit_id, trigger_type, max_steps, step_count, started_at, timeout_at, created_at)
+                values (?, null, 0, ?, ?, ?, ?, 'RECEIVED', ?, 'CONVERSATION_RESEARCH', ?, 0, ?, ?, ?)
+                """, runId, conversationId, sourceMessageId, objective, capability, auditId, maxSteps,
+                dbTime(startedAt), dbTime(timeoutAt), dbTime(startedAt));
+        return requireRun(runId);
+    }
+
+    @Override
     public Optional<AgentRun> findRun(UUID runId) {
         try {
             return Optional.ofNullable(jdbc.queryForObject("select * from skill_run where id = ?", this::mapRun, runId));
@@ -126,6 +140,11 @@ public class JdbcAgentRunRepository implements AgentRunRepository {
     }
 
     @Override
+    public void attachResultContent(UUID runId, UUID contentId) {
+        jdbc.update("update skill_run set result_content_id = ? where id = ?", contentId, runId);
+    }
+
+    @Override
     public List<Evidence> findEvidenceForClaim(UUID claimId) {
         return jdbc.query("""
                 select e.* from evidence e
@@ -150,7 +169,10 @@ public class JdbcAgentRunRepository implements AgentRunRepository {
     private AgentRun mapRun(ResultSet result, int row) throws SQLException {
         return new AgentRun(
                 result.getObject("id", UUID.class), result.getObject("skill_id", UUID.class),
-                result.getInt("skill_version"), result.getObject("audit_id", UUID.class), result.getString("trigger_type"),
+                result.getInt("skill_version"), result.getObject("conversation_id", UUID.class),
+                result.getObject("source_message_id", UUID.class), result.getString("objective"),
+                result.getString("capability"), result.getObject("result_content_id", UUID.class),
+                result.getObject("audit_id", UUID.class), result.getString("trigger_type"),
                 AgentRunStatus.valueOf(result.getString("status")), result.getInt("max_steps"), result.getInt("step_count"),
                 instant(result, "started_at"), instant(result, "timeout_at"), instant(result, "completed_at"),
                 nullableLong(result, "duration_ms"), result.getString("failure_summary"), instant(result, "created_at"));

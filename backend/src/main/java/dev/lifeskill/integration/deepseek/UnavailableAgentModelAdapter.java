@@ -26,5 +26,8 @@ public class UnavailableAgentModelAdapter implements AgentModelPort {
     public CompositionResult compose(String objective, Claim claim, List<Evidence> evidence) { throw disabled(); }
 
     @Override
+    public ReportResult composeReport(String objective, Claim claim, List<Evidence> evidence) { throw disabled(); }
+
+    @Override
     public LearningResult composeLearning(Claim claim, List<Evidence> evidence) { throw disabled(); }
 }

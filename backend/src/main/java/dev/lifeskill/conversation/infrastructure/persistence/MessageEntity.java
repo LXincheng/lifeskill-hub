@@ -47,6 +47,9 @@ class MessageEntity {
     @Column(name = "duration_ms")
     private Long durationMs;
 
+    @Column(name = "agent_run_id")
+    private UUID agentRunId;
+
     protected MessageEntity() {
     }
 
@@ -56,13 +59,15 @@ class MessageEntity {
             String content,
             Instant createdAt,
             List<ProcessingStep> processingSteps,
-            Long durationMs) {
+            Long durationMs,
+            UUID agentRunId) {
         this.id = id;
         this.role = role;
         this.content = content;
         this.createdAt = createdAt;
         this.processingSteps = new ArrayList<>(processingSteps);
         this.durationMs = durationMs;
+        this.agentRunId = agentRunId;
     }
 
     void attachTo(ConversationEntity conversation) {
@@ -91,5 +96,9 @@ class MessageEntity {
 
     Long durationMs() {
         return durationMs;
+    }
+
+    UUID agentRunId() {
+        return agentRunId;
     }
 }

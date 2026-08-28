@@ -5,17 +5,20 @@ import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
 import type { SkillDraft } from './conversationApi'
 import type { ConversationState } from './useConversation'
+import { ResearchRunPanel } from './ResearchRunPanel'
+import { workspaceCopy } from '../copy'
 
 type ChatPageProps = {
   state: ConversationState
   onManageSkill: (skillId: string) => void
+  onOpenReport: (contentId: string) => void
 }
 
 const starterPrompts: Array<{ icon: IconName; tone: string; label: string; description: string; prompt: string }> = [
-  { icon: 'route', tone: 'blue', label: '创建学习路径', description: '把目标拆成循序渐进的学习步骤', prompt: '为我创建一个 Java Agent 开发学习路径' },
+  { icon: 'search', tone: 'orange', label: '生成黄金报告', description: '读取 Goldhub 官方研究并生成专业报告', prompt: '帮我做一份9月份黄金市场研究报告，说明核心驱动、关键数据、风险和后续观察点' },
   { icon: 'globe', tone: 'green', label: '追踪信息动态', description: '持续关注主题，先生成可确认草案', prompt: '每周整理 Java Agent 前沿动态，关注 LangChain4j 和 Spring AI' },
-  { icon: 'search', tone: 'orange', label: '发起深度研究', description: '围绕一个问题整理可靠结论', prompt: '研究 RAG 与 Fine-tuning 的优劣，给我一份分析' },
-  { icon: 'zap', tone: 'purple', label: '快速提问', description: '直接讨论正在困扰你的问题', prompt: '' },
+  { icon: 'route', tone: 'blue', label: '创建学习路径', description: '把目标拆成循序渐进的学习步骤', prompt: '为我创建一个 Java Agent 开发学习路径' },
+  { icon: 'zap', tone: 'purple', label: '规划购票辅助', description: '先核对真实工具与人工确认边界', prompt: '帮我盯着抢购上海正大乐影城9.6《奥德赛》的皇帝座电影票' },
 ]
 
 const dayLabels: Record<string, string> = {
@@ -41,7 +44,7 @@ function formatDate(value?: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'long', day: 'numeric', weekday: 'short' }).format(date)
 }
 
-export function ChatPage({ state, onManageSkill }: ChatPageProps) {
+export function ChatPage({ state, onManageSkill, onOpenReport }: ChatPageProps) {
   const [input, setInput] = useState('')
   const [waitSeconds, setWaitSeconds] = useState(0)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -94,10 +97,12 @@ export function ChatPage({ state, onManageSkill }: ChatPageProps) {
           {!state.isLoading && conversation && visibleMessages.length === 0 && (
             <div className="chat-empty">
               <header className="chat-greeting">
-                <span>{formatDate()}</span>
+                <span>{workspaceCopy.consoleEyebrow} · {formatDate()}</span>
                 <h1>{greeting}，今天想推进什么？</h1>
-                <p>可以直接提问，也可以从下面选择一个明确入口。</p>
+                <p>{workspaceCopy.consoleTitle}</p>
               </header>
+
+              <div className="capability-console">{workspaceCopy.capabilities.map((capability) => <div key={capability.label}><span className={capability.tone}><i />{capability.status}</span><strong>{capability.label}</strong><small>{capability.detail}</small></div>)}</div>
 
               <div className="chat-stats" aria-label="当前会话状态">
                 <div><strong>{conversation.messages.length}</strong><span>条消息</span></div>
@@ -138,6 +143,7 @@ export function ChatPage({ state, onManageSkill }: ChatPageProps) {
                       ))}</ol>
                     </details>
                   )}
+                  {message.agentRunId && <ResearchRunPanel runId={message.agentRunId} onOpenReport={onOpenReport} />}
                 </article>
               ))}
 

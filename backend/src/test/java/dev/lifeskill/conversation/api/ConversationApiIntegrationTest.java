@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -179,13 +180,32 @@ class ConversationApiIntegrationTest {
 
         mockMvc.perform(post("/api/conversations/{conversationId}/messages", conversationId)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"content\":\"搜索最新的 Spring AI 发布\"}"))
+                        .content("{\"content\":\"搜索最新的量子计算行业消息\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.messages[1].content")
-                        .value("我识别到这是一次搜索需求。可靠来源检索将在下一阶段接入，在此之前我不会生成未经核验的搜索结论。"))
+                        .value("我识别到这是一次研究需求，但当前没有与该主题匹配的可靠来源适配器。系统不会用通用模型编造最新事实。"))
                 .andExpect(jsonPath("$.messages[1].processingSteps[2].stage").value("COLLECTING"))
                 .andExpect(jsonPath("$.messages[1].processingSteps[2].status").value("BLOCKED"))
                 .andExpect(jsonPath("$.skillDrafts", hasSize(0)));
+    }
+
+    @Test
+    void refusesToCreateAFakeTicketSkillWithoutOfficialInventoryAndOrderTools() throws Exception {
+        String location = mockMvc.perform(post("/api/conversations"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getHeader("Location");
+        String conversationId = location.substring(location.lastIndexOf('/') + 1);
+
+        mockMvc.perform(post("/api/conversations/{conversationId}/messages", conversationId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"content\":\"帮我盯着抢购上海正大乐影城9.6《奥德赛》的皇帝座电影票\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.messages[1].content").value(org.hamcrest.Matchers.containsString("尚未接入正大乐影城")))
+                .andExpect(jsonPath("$.messages[1].content").value(org.hamcrest.Matchers.containsString("支付不会自动执行")))
+                .andExpect(jsonPath("$.messages[1].processingSteps[1].status").value("BLOCKED"))
+                .andExpect(jsonPath("$.skillDrafts", hasSize(0)));
+
+        verifyNoInteractions(modelPort);
     }
 
     @Test

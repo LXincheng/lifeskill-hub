@@ -7,6 +7,7 @@ export type ConversationMessage = {
   createdAt: string
   processingSteps: ProcessingStep[]
   durationMs: number | null
+  agentRunId: string | null
 }
 
 export type ProcessingStep = {
@@ -83,6 +84,7 @@ async function requestConversation(path: string, init?: RequestInit): Promise<Co
       ...message,
       processingSteps: message.processingSteps ?? [],
       durationMs: message.durationMs ?? null,
+      agentRunId: message.agentRunId ?? null,
     })),
     skillDrafts: conversation.skillDrafts ?? [],
   }

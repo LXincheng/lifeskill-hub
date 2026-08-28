@@ -36,7 +36,7 @@ public class ConversationCompletionApplicationService {
 
     @Transactional
     public Conversation complete(UUID conversationId, String assistantContent, Optional<SkillDraft> draft) {
-        return complete(conversationId, assistantContent, draft, List.of(), null);
+        return complete(conversationId, assistantContent, draft, List.of(), null, null);
     }
 
     @Transactional
@@ -46,10 +46,21 @@ public class ConversationCompletionApplicationService {
             Optional<SkillDraft> draft,
             List<ProcessingStep> processingSteps,
             Long durationMs) {
+        return complete(conversationId, assistantContent, draft, processingSteps, durationMs, null);
+    }
+
+    @Transactional
+    public Conversation complete(
+            UUID conversationId,
+            String assistantContent,
+            Optional<SkillDraft> draft,
+            List<ProcessingStep> processingSteps,
+            Long durationMs,
+            UUID agentRunId) {
         Conversation conversation = conversationRepository.findById(conversationId)
                 .orElseThrow(() -> new ConversationNotFoundException(conversationId));
         conversation.addAssistantMessage(
-                idGenerator.nextId(), assistantContent, clock.instant(), processingSteps, durationMs);
+                idGenerator.nextId(), assistantContent, clock.instant(), processingSteps, durationMs, agentRunId);
         Conversation savedConversation = conversationRepository.save(conversation);
         draft.ifPresent(skillDraftRepository::save);
         return savedConversation;

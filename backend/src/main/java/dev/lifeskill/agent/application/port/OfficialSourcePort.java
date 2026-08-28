@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.List;
 
 public interface OfficialSourcePort {
+    String capability();
+
     List<OfficialSourceDocument> collect(Instant fetchedAt);
 
     record OfficialSourceDocument(

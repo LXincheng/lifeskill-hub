@@ -22,6 +22,8 @@ import dev.lifeskill.conversation.domain.Conversation;
 import dev.lifeskill.conversation.domain.Message;
 import dev.lifeskill.conversation.domain.ProcessingStep;
 import dev.lifeskill.conversation.domain.ProcessingStepStatus;
+import dev.lifeskill.agent.application.AgentRunApplicationService;
+import dev.lifeskill.agent.domain.ResearchCapability;
 import dev.lifeskill.shared.application.IdGenerator;
 import dev.lifeskill.skill.application.SkillDraftApplicationService;
 import dev.lifeskill.skill.domain.SkillDraft;
@@ -36,7 +38,11 @@ public class ConversationTurnApplicationService {
     static final String MODEL_UNAVAILABLE_REPLY =
             "消息已保存，但 AI 草案暂时不可用：模型服务可能异常，或结果没有通过校验。你可以稍后重试；系统不会据此创建长期任务。";
     static final String SEARCH_NOT_READY_REPLY =
-            "我识别到这是一次搜索需求。可靠来源检索将在下一阶段接入，在此之前我不会生成未经核验的搜索结论。";
+            "我识别到这是一次研究需求，但当前没有与该主题匹配的可靠来源适配器。系统不会用通用模型编造最新事实。";
+    static final String TICKET_NOT_READY_REPLY =
+            "我理解你想持续监控场次和皇帝座，但当前尚未接入正大乐影城的官方场次、库存和锁座工具，因此不能诚实地创建一个会自动抢票的 Skill。这个任务需要：影院只读查询适配器、登录授权、开售前重新核验，以及锁座/下单前由你再次确认；支付不会自动执行。";
+    static final String RESEARCH_STARTED_REPLY =
+            "已启动一次性官方研究。系统会采集 World Gold Council 最新研究，保存 Evidence，独立核验后生成一份可追溯的专业报告。你可以在下方实时查看步骤，完成后直接打开报告。";
 
     private final ConversationApplicationService conversationService;
     private final ConversationCompletionApplicationService completionService;
@@ -44,6 +50,7 @@ public class ConversationTurnApplicationService {
     private final ModelPort modelPort;
     private final Clock clock;
     private final IdGenerator idGenerator;
+    private final AgentRunApplicationService agentRuns;
 
     public ConversationTurnApplicationService(
             ConversationApplicationService conversationService,
@@ -51,13 +58,15 @@ public class ConversationTurnApplicationService {
             SkillDraftApplicationService skillDraftService,
             ModelPort modelPort,
             Clock clock,
-            IdGenerator idGenerator) {
+            IdGenerator idGenerator,
+            AgentRunApplicationService agentRuns) {
         this.conversationService = conversationService;
         this.completionService = completionService;
         this.skillDraftService = skillDraftService;
         this.modelPort = modelPort;
         this.clock = clock;
         this.idGenerator = idGenerator;
+        this.agentRuns = agentRuns;
     }
 
     public ConversationTurnResult sendMessage(UUID conversationId, String content) {
@@ -70,6 +79,16 @@ public class ConversationTurnApplicationService {
                 elapsedMs(turnStartedAt), "已写入对话历史"));
 
         try {
+            ResearchCapability capability = ResearchCapability.detect(sourceMessage.content());
+            if (capability == ResearchCapability.TICKET_ASSIST) {
+                return completeUnavailableTicket(conversationId, steps, turnStartedAt);
+            }
+            // 已接入的官方研究使用确定性路由，避免模型把“做一份报告”误判成闲聊而跳过真实工具链。
+            if (capability.isRunnableResearch()
+                    && !ResearchCapability.requestsRecurringExecution(sourceMessage.content())) {
+                return startOfficialResearch(conversationId, sourceMessage, capability, steps, turnStartedAt);
+            }
+
             long modelStartedAt = System.nanoTime();
             ModelDecision decision = modelPort.analyze(sourceMessage.content());
             if (decision == null) {
@@ -79,23 +98,31 @@ public class ConversationTurnApplicationService {
                     "PLANNING", "意图与草案分析", ProcessingStepStatus.COMPLETED,
                     elapsedMs(modelStartedAt), "结构化输出已通过 Schema 校验"));
             Optional<SkillDraft> draft = createDraft(conversationId, sourceMessage.id(), decision);
+            UUID agentRunId = null;
             if (decision.intent() == ConversationIntent.RECURRING_SKILL) {
                 steps.add(new ProcessingStep(
                         "POLICY_CHECK", "长期任务规则校验", ProcessingStepStatus.COMPLETED,
                         0, "周期、时区和确认边界已通过 Java 规则校验"));
             } else if (decision.intent() == ConversationIntent.SEARCH) {
-                steps.add(new ProcessingStep(
-                        "COLLECTING", "可靠来源收集", ProcessingStepStatus.BLOCKED,
-                        0, "Source Adapter 与 Evidence 流水线尚未接入，未生成未经核验的结论"));
+                if (capability.isRunnableResearch()) {
+                    agentRunId = agentRuns.startResearch(
+                            conversationId, sourceMessage.id(), sourceMessage.content(), capability).run().id();
+                    steps.add(new ProcessingStep(
+                            "COLLECTING", "官方研究已排队", ProcessingStepStatus.COMPLETED,
+                            0, "AgentRun 已创建；后续步骤通过流式事件持续更新"));
+                } else {
+                    steps.add(new ProcessingStep(
+                            "COLLECTING", "可靠来源收集", ProcessingStepStatus.BLOCKED,
+                            0, "没有匹配的官方 Source Adapter，未生成未经核验的结论"));
+                }
             }
-            String assistantReply = decision.intent() == ConversationIntent.SEARCH
-                    ? SEARCH_NOT_READY_REPLY
-                    : decision.reply();
+            String assistantReply = agentRunId != null ? RESEARCH_STARTED_REPLY
+                    : decision.intent() == ConversationIntent.SEARCH ? SEARCH_NOT_READY_REPLY : decision.reply();
             steps.add(new ProcessingStep(
                     "COMPOSING", "回复已整理", ProcessingStepStatus.COMPLETED,
                     0, "仅展示最终答复，不包含模型原始思维链"));
             Conversation completed = completionService.complete(
-                    conversationId, assistantReply, draft, steps, elapsedMs(turnStartedAt));
+                    conversationId, assistantReply, draft, steps, elapsedMs(turnStartedAt), agentRunId);
             return result(completed);
         } catch (ModelProcessingException | IllegalArgumentException | DateTimeException exception) {
             LOGGER.warn(
@@ -109,6 +136,42 @@ public class ConversationTurnApplicationService {
                     conversationId, MODEL_UNAVAILABLE_REPLY, Optional.empty(), steps, elapsedMs(turnStartedAt));
             return result(completed);
         }
+    }
+
+    private ConversationTurnResult startOfficialResearch(
+            UUID conversationId,
+            Message sourceMessage,
+            ResearchCapability capability,
+            List<ProcessingStep> steps,
+            long turnStartedAt) {
+        steps.add(new ProcessingStep(
+                "PLANNING", "官方研究路由", ProcessingStepStatus.COMPLETED,
+                0, "已由 Java 规则匹配可用 Source Adapter"));
+        UUID agentRunId = agentRuns.startResearch(
+                conversationId, sourceMessage.id(), sourceMessage.content(), capability).run().id();
+        steps.add(new ProcessingStep(
+                "COLLECTING", "官方研究已排队", ProcessingStepStatus.COMPLETED,
+                0, "AgentRun 已创建；后续步骤通过流式事件持续更新"));
+        steps.add(new ProcessingStep(
+                "COMPOSING", "回复已整理", ProcessingStepStatus.COMPLETED,
+                0, "仅展示最终答复，不包含模型原始思维链"));
+        return result(completionService.complete(
+                conversationId, RESEARCH_STARTED_REPLY, Optional.empty(), steps,
+                elapsedMs(turnStartedAt), agentRunId));
+    }
+
+    private ConversationTurnResult completeUnavailableTicket(
+            UUID conversationId,
+            List<ProcessingStep> steps,
+            long turnStartedAt) {
+        steps.add(new ProcessingStep(
+                "POLICY_CHECK", "外部操作能力检查", ProcessingStepStatus.BLOCKED,
+                0, "缺少影院官方查询、库存、锁座和下单 Tool，未创建不可执行的假任务"));
+        steps.add(new ProcessingStep(
+                "COMPOSING", "安全边界已说明", ProcessingStepStatus.COMPLETED,
+                0, "锁座和下单必须在实时复核后由用户确认，支付不会自动执行"));
+        return result(completionService.complete(
+                conversationId, TICKET_NOT_READY_REPLY, Optional.empty(), steps, elapsedMs(turnStartedAt)));
     }
 
     private long elapsedMs(long startedAt) {

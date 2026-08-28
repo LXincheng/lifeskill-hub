@@ -59,10 +59,14 @@
 - [x] 从可靠动态生成学习文件夹、学习路径、文章和测验
 - [x] 暂停/恢复 Skill、修改频率与查看最近运行结果的前端入口
 - [x] 最小可靠每周调度；数据库时隙唯一键阻止重复触发
+- [x] World Gold Council 官方研究适配器与一次性黄金报告闭环
+- [x] 聊天中的确定性研究路由、SSE 进度、报告阅读层与刷新恢复
+- [x] 电影票能力边界：缺少官方库存/锁座/订单 Tool 时不创建假任务
+- [x] Windows 一键启动、健康检查与当前仓库进程安全停止
 
 验收：手动运行 `Java Agent Weekly` 后，一条动态可追溯到原始官方来源，并能生成学习内容；无 Evidence 的 Claim 被测试拦截，失败过程可恢复或重试。
 
-完成记录（2026-08-27）：已使用真实 PostgreSQL、DeepSeek 和 Spring AI 官方 GitHub Release 完成验收。学习生成按 `source_skill_run_id + type` 幂等，刷新后从数据库恢复。
+完成记录（2026-08-28）：已使用真实 PostgreSQL、DeepSeek、Spring AI 官方 GitHub Release 和 World Gold Council 官方研究完成验收。学习生成按 `source_skill_run_id + type` 幂等；一次性报告保存为核验后的 `REPORT` ContentItem，对话、运行结果与报告入口刷新后从数据库恢复。
 
 ## M3：学习进度与复习
 

@@ -27,10 +27,13 @@ export type AgentStep = {
 
 export type AgentRun = {
   id: string
-  skillId: string
+  skillId: string | null
   skillVersion: number
+  conversationId: string | null
+  capability: string | null
+  resultContentId: string | null
   auditId: string
-  triggerType: 'MANUAL' | 'SCHEDULED'
+  triggerType: 'MANUAL' | 'SCHEDULED' | 'CONVERSATION_RESEARCH'
   status: string
   maxSteps: number
   stepCount: number

@@ -30,6 +30,8 @@ import com.jayway.jsonpath.JsonPath;
 
 import dev.lifeskill.agent.application.port.AgentModelPort;
 import dev.lifeskill.agent.application.port.OfficialSourcePort;
+import dev.lifeskill.agent.application.AgentRunApplicationService;
+import dev.lifeskill.agent.domain.ResearchCapability;
 import dev.lifeskill.skill.application.port.SkillRepository;
 import dev.lifeskill.skill.domain.Skill;
 import dev.lifeskill.skill.domain.SkillStatus;
@@ -43,9 +45,11 @@ class AgentRunApiIntegrationTest {
     @Autowired MockMvc mockMvc;
     @Autowired JdbcTemplate jdbc;
     @Autowired SkillRepository skillRepository;
+    @Autowired AgentRunApplicationService agentRuns;
 
     @MockitoBean AgentModelPort model;
-    @MockitoBean OfficialSourcePort source;
+    @MockitoBean(name = "springAiGitHubReleaseAdapter") OfficialSourcePort source;
+    @MockitoBean(name = "worldGoldCouncilResearchAdapter") OfficialSourcePort goldSource;
 
     private UUID skillId;
 
@@ -57,7 +61,9 @@ class AgentRunApiIntegrationTest {
                     started_at timestamp with time zone, completed_at timestamp with time zone, error_code varchar(80),
                     created_at timestamp with time zone not null, audit_id uuid not null, trigger_type varchar(24) not null,
                     schedule_slot varchar(80), max_steps integer not null, step_count integer not null,
-                    timeout_at timestamp with time zone, duration_ms bigint, failure_summary varchar(1000))
+                    timeout_at timestamp with time zone, duration_ms bigint, failure_summary varchar(1000),
+                    conversation_id uuid, source_message_id uuid, objective varchar(4000), capability varchar(48),
+                    result_content_id uuid)
                 """);
         jdbc.execute("""
                 create table if not exists agent_step (
@@ -80,6 +86,7 @@ class AgentRunApiIntegrationTest {
                     verification_summary varchar(1000), verified_at timestamp with time zone)
                 """);
         jdbc.execute("create table if not exists claim_evidence (claim_id uuid not null, evidence_id uuid not null, primary key (claim_id, evidence_id))");
+        jdbc.execute("alter table skill_run alter column skill_id drop not null");
 
         skillId = UUID.randomUUID();
         UUID draftId = UUID.randomUUID();
@@ -93,6 +100,13 @@ class AgentRunApiIntegrationTest {
                 "GITHUB_RELEASE", "Spring AI GitHub Releases",
                 "https://github.com/spring-projects/spring-ai/releases/tag/v2.0.0", "v2.0.0",
                 "Spring AI 2.0.0", "Official notes", "Official notes", now, now, "a".repeat(64), true)));
+        when(source.capability()).thenReturn("JAVA_OFFICIAL");
+        when(goldSource.capability()).thenReturn("GOLD_MARKET");
+        when(goldSource.collect(any())).thenReturn(List.of(new OfficialSourcePort.OfficialSourceDocument(
+                "OFFICIAL_RESEARCH", "World Gold Council",
+                "https://www.gold.org/goldhub/research/gold-market-commentary-july-2026", "gold-july-2026",
+                "Gold Market Commentary", "Official gold research", "Official gold research", now, now,
+                "b".repeat(64), true)));
         when(model.research(anyString(), any())).thenAnswer(invocation -> {
             List<dev.lifeskill.agent.domain.Evidence> evidence = invocation.getArgument(1);
             return new AgentModelPort.ResearchResult("Spring AI 发布了 2.0.0。", List.of(evidence.getFirst().id().toString()));
@@ -108,6 +122,9 @@ class AgentRunApiIntegrationTest {
         when(model.composeLearning(any(), any())).thenReturn(new AgentModelPort.LearningResult(
                 "Spring AI 官方更新", "来自已核验动态", "学习路径", "1. 阅读 Release\n2. 验证变化",
                 "版本解读", "基于官方 Release 的结构化解读。", "理解测验", "1. 来源是什么？\nA. 官方 Release\nB. 论坛\n答案：A"));
+        when(model.composeReport(anyString(), any(), any())).thenReturn(new AgentModelPort.ReportResult(
+                "9月黄金市场研究报告",
+                "## 01 核心观点\n- 官方研究结论。\n\n## 06 官方来源\n- Evidence ID"));
     }
 
     @Test
@@ -147,6 +164,22 @@ class AgentRunApiIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.folder.id").value(folderId))
                 .andExpect(jsonPath("$.contentItems", hasSize(3)));
+    }
+
+    @Test
+    void runsOneTimeGoldResearchAndPersistsVerifiedReport() throws Exception {
+        UUID runId = agentRuns.startResearch(
+                UUID.randomUUID(), UUID.randomUUID(), "帮我做一份9月黄金研究报告", ResearchCapability.GOLD_MARKET)
+                .run().id();
+
+        String run = waitForTerminalRun(runId.toString());
+        org.assertj.core.api.Assertions.assertThat(JsonPath.<String>read(run, "$.status")).isEqualTo("COMPLETED");
+        org.assertj.core.api.Assertions.assertThat(JsonPath.<String>read(run, "$.capability")).isEqualTo("GOLD_MARKET");
+        String contentId = JsonPath.read(run, "$.resultContentId");
+        Integer reports = jdbc.queryForObject(
+                "select count(*) from content_item where id = ? and type = 'REPORT' and verification_status = 'VERIFIED'",
+                Integer.class, UUID.fromString(contentId));
+        org.assertj.core.api.Assertions.assertThat(reports).isEqualTo(1);
     }
 
     private String waitForTerminalRun(String runId) throws Exception {
