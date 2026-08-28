@@ -53,9 +53,6 @@ export function ChatPage({ state, onManageSkill, onOpenReport }: ChatPageProps) 
   const visibleMessages = conversation
     ? [...conversation.messages, ...(state.pendingMessage ? [state.pendingMessage] : [])]
     : []
-  const pendingDraftCount = conversation?.skillDrafts.filter((draft) => draft.status === 'PENDING_CONFIRMATION').length ?? 0
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
 
   useEffect(() => {
     if (!state.isSending) { setWaitSeconds(0); return }
@@ -98,17 +95,9 @@ export function ChatPage({ state, onManageSkill, onOpenReport }: ChatPageProps) 
             <div className="chat-empty">
               <header className="chat-greeting">
                 <span>{workspaceCopy.consoleEyebrow} · {formatDate()}</span>
-                <h1>{greeting}。{workspaceCopy.consoleTitle}</h1>
+                <h1>{workspaceCopy.consoleTitle}</h1>
                 <p>{workspaceCopy.consoleDescription}</p>
               </header>
-
-              <div className="capability-console">{workspaceCopy.capabilities.map((capability) => <div key={capability.label}><span className={capability.tone}><i />{capability.status}</span><strong>{capability.label}</strong><small>{capability.detail}</small></div>)}</div>
-
-              <div className="chat-stats" aria-label="当前会话状态">
-                <div><strong>{conversation.messages.length}</strong><span>条消息</span></div>
-                <div><strong>{pendingDraftCount}</strong><span>个待确认草案</span></div>
-                <div><strong className={state.error ? 'danger' : 'success'}>{state.error ? '异常' : '已同步'}</strong><span>本地工作区</span></div>
-              </div>
 
               <div className="starter-grid">
                 {starterPrompts.map((starter) => (

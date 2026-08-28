@@ -7,6 +7,7 @@ import java.util.UUID;
 import dev.lifeskill.learning.domain.ContentItem;
 import dev.lifeskill.learning.domain.LearningFolder;
 import dev.lifeskill.learning.domain.LearningAttempt;
+import dev.lifeskill.learning.domain.LearningAnnotation;
 
 public interface LearningRepository {
     List<LearningFolder> findFolders();
@@ -21,4 +22,7 @@ public interface LearningRepository {
     LearningAttempt saveAttempt(LearningAttempt attempt);
     List<LearningAttempt> findAttempts(UUID contentId);
     List<LearningAttempt> findAttemptsForContent(List<UUID> contentIds);
+    LearningAnnotation saveAnnotation(LearningAnnotation annotation);
+    List<LearningAnnotation> findAnnotations(UUID contentId);
+    void deleteAnnotation(UUID annotationId);
 }

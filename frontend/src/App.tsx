@@ -9,6 +9,7 @@ import { PrimaryNavigation } from './layout/PrimaryNavigation'
 import type { PrimaryView } from './layout/PrimaryNavigation'
 import { PulsePage } from './pulse/PulsePage'
 import { SkillsDrawer } from './skills/SkillsDrawer'
+import { useTheme } from './theme/useTheme'
 
 function App() {
   const [view, setView] = useState<PrimaryView>('chat')
@@ -16,6 +17,7 @@ function App() {
   const [reportContentId, setReportContentId] = useState<string | null>(null)
   const [isHistoryOpen, setIsHistoryOpen] = useState(false)
   const conversationState = useConversation()
+  const { theme, toggleTheme } = useTheme()
   const conversation = conversationState.conversation
 
   function handleNewConversation() {
@@ -30,6 +32,8 @@ function App() {
         isBusy={conversationState.isLoading || conversationState.isSending}
         onNavigate={setView}
         onNewConversation={handleNewConversation}
+        onToggleTheme={toggleTheme}
+        theme={theme}
       />
 
       <main className="app-main">

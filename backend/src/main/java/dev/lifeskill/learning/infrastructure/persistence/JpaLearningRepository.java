@@ -11,20 +11,24 @@ import dev.lifeskill.learning.application.port.LearningRepository;
 import dev.lifeskill.learning.domain.ContentItem;
 import dev.lifeskill.learning.domain.LearningFolder;
 import dev.lifeskill.learning.domain.LearningAttempt;
+import dev.lifeskill.learning.domain.LearningAnnotation;
 
 @Repository
 class JpaLearningRepository implements LearningRepository {
     private final SpringDataLearningFolderRepository folderRepository;
     private final SpringDataContentItemRepository contentRepository;
     private final SpringDataLearningAttemptRepository attemptRepository;
+    private final SpringDataLearningAnnotationRepository annotationRepository;
 
     JpaLearningRepository(
             SpringDataLearningFolderRepository folderRepository,
             SpringDataContentItemRepository contentRepository,
-            SpringDataLearningAttemptRepository attemptRepository) {
+            SpringDataLearningAttemptRepository attemptRepository,
+            SpringDataLearningAnnotationRepository annotationRepository) {
         this.folderRepository = folderRepository;
         this.contentRepository = contentRepository;
         this.attemptRepository = attemptRepository;
+        this.annotationRepository = annotationRepository;
     }
 
     @Override
@@ -97,6 +101,24 @@ class JpaLearningRepository implements LearningRepository {
         return attemptRepository.findAllByContentItemIdInOrderByCreatedAtDesc(contentIds).stream().map(this::toDomain).toList();
     }
 
+    @Override
+    public LearningAnnotation saveAnnotation(LearningAnnotation annotation) {
+        return toDomain(annotationRepository.save(new LearningAnnotationEntity(
+                annotation.id(), annotation.contentItemId(), annotation.kind(), annotation.selectedText(),
+                annotation.note(), annotation.createdAt())));
+    }
+
+    @Override
+    public List<LearningAnnotation> findAnnotations(UUID contentId) {
+        return annotationRepository.findAllByContentItemIdOrderByCreatedAtDesc(contentId).stream()
+                .map(this::toDomain).toList();
+    }
+
+    @Override
+    public void deleteAnnotation(UUID annotationId) {
+        annotationRepository.deleteById(annotationId);
+    }
+
     private LearningFolder toDomain(LearningFolderEntity entity) {
         return new LearningFolder(entity.id(), entity.name(), entity.description(), entity.createdAt(), entity.updatedAt());
     }
@@ -118,5 +140,10 @@ class JpaLearningRepository implements LearningRepository {
                 entity.id(), entity.contentItemId(), entity.kind(), entity.status(), entity.completedUnits(),
                 entity.totalUnits(), entity.score() == null ? null : entity.score().doubleValue(), indexes,
                 entity.completedAt(), entity.createdAt());
+    }
+
+    private LearningAnnotation toDomain(LearningAnnotationEntity entity) {
+        return new LearningAnnotation(
+                entity.id(), entity.contentItemId(), entity.kind(), entity.selectedText(), entity.note(), entity.createdAt());
     }
 }

@@ -45,6 +45,15 @@ export type LearningProgress = {
   latestActivityAt: string | null
 }
 
+export type LearningAnnotation = {
+  id: string
+  contentItemId: string
+  kind: 'HIGHLIGHT' | 'FEEDBACK'
+  selectedText: string | null
+  note: string | null
+  createdAt: string
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, init)
   if (!response.ok) {
@@ -73,3 +82,7 @@ export const deleteContent = (id: string) => request<void>(`/api/content-items/$
 export const listAttempts = (id: string) => request<LearningAttempt[]>(`/api/content-items/${id}/attempts`)
 export const recordAttempt = (id: string, input: Omit<LearningAttempt, 'id' | 'contentItemId' | 'score' | 'completedAt' | 'createdAt'>) => request<LearningAttempt>(`/api/content-items/${id}/attempts`, json('POST', input))
 export const getLearningProgress = (folderId: string) => request<LearningProgress>(`/api/learning-folders/${folderId}/progress`)
+export const listAnnotations = (id: string) => request<LearningAnnotation[]>(`/api/content-items/${id}/annotations`)
+export const addAnnotation = (id: string, input: { kind: 'HIGHLIGHT' | 'FEEDBACK'; selectedText?: string; note?: string }) => request<LearningAnnotation>(`/api/content-items/${id}/annotations`, json('POST', input))
+export const deleteAnnotation = (contentId: string, annotationId: string) => request<void>(`/api/content-items/${contentId}/annotations/${annotationId}`, { method: 'DELETE' })
+export const regenerateContent = (id: string) => request<ContentItem>(`/api/content-items/${id}/regenerations`, { method: 'POST' })

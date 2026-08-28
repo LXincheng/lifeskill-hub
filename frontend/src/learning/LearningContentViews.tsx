@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
-import { listAttempts, recordAttempt } from './learningApi'
+import { addAnnotation, deleteAnnotation, listAnnotations, listAttempts, recordAttempt, regenerateContent } from './learningApi'
 import type { ContentItem, ContentItemType } from './learningApi'
+import { RichText } from './RichText'
 
 export const contentTypeConfig: Record<ContentItemType, { label: string; group: string; icon: IconName; tone: string }> = {
   REPORT: { label: '研究报告', group: '研究报告', icon: 'file', tone: 'red' },
@@ -20,14 +21,14 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(value))
 }
 
-export function LearningContentViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
-  if (item.type === 'REPORT') return <ProfessionalReportReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
+export function LearningContentViewer({ item, onEdit, onProgressChange, onContentChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void; onContentChange?: (item: ContentItem) => void }) {
+  if (item.type === 'REPORT') return <ProfessionalReportReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} onContentChange={onContentChange} />
   if (item.type === 'LEARNING_PATH' || item.type === 'CHECKLIST') return <PathViewer item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
   if (item.type === 'QUIZ') return <QuizViewer item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
-  return <ArticleReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} />
+  return <ArticleReader item={item} onEdit={onEdit} onProgressChange={onProgressChange} onContentChange={onContentChange} />
 }
 
-function ProfessionalReportReader({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
+function ProfessionalReportReader({ item, onEdit, onProgressChange, onContentChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void; onContentChange?: (item: ContentItem) => void }) {
   const sections = item.body.split(/^##\s+/m)
   const lead = sections.shift()?.trim().replace(/^>\s*/, '') ?? ''
   return <article className="content-view professional-report">
@@ -38,6 +39,7 @@ function ProfessionalReportReader({ item, onEdit, onProgressChange }: { item: Co
       const body = bodyLines.join('\n').trim()
       return <section key={`${heading}-${index}`}><h2><em>{String(index + 1).padStart(2, '0')}</em><span>{heading.replace(/^\d+\s*/, '')}</span></h2>{renderReportBody(body, index)}</section>
     })}</div>
+    <ReadingActions item={item} onContentChange={onContentChange} />
     <CompletionControl item={item} onProgressChange={onProgressChange} />
     <footer className="report-disclaimer"><strong>口径说明</strong><span>报告只复述并整理已保存的官方 Evidence；市场信息具有时效性，请在决策前重新核验。</span></footer>
   </article>
@@ -52,29 +54,17 @@ function renderReportBody(body: string, sectionIndex: number) {
   }
   const items = lines.filter((line) => /^[-*]\s+|^\d+[.、]\s*/.test(line))
   if (items.length > 0) return <ol className={sectionIndex === 3 ? 'report-timeline' : 'report-points'}>{items.map((line, index) => <li key={`${line}-${index}`}><span>{String(index + 1).padStart(2, '0')}</span><p>{line.replace(/^[-*]\s+|^\d+[.、]\s*/, '')}</p></li>)}</ol>
-  return <div className="report-prose">{body.split(/\n\s*\n/).filter(Boolean).map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+  return <div className="report-prose"><RichText body={body} /></div>
 }
 
 function ContentHeader({ item, onEdit }: { item: ContentItem; onEdit?: () => void }) {
   const config = contentTypeConfig[item.type]
-  return <header className="content-header"><div className="content-meta"><span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span><span>{config.label} · 更新于 {formatDate(item.updatedAt)}</span></div>{onEdit && <button className="secondary-button" onClick={onEdit}><Icon name="pencil" size={15} />编辑</button>}</header>
+  const canEdit = onEdit && item.verificationStatus === 'USER_AUTHORED' && item.type !== 'ARTICLE' && item.type !== 'REPORT'
+  return <header className="content-header"><div className="content-meta"><span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span><span>{config.label} · 更新于 {formatDate(item.updatedAt)}</span></div>{canEdit && <button className="secondary-button" onClick={onEdit}><Icon name="pencil" size={15} />编辑</button>}</header>
 }
 
-function ArticleReader({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
-  const blocks = item.body.split('```')
-  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body">{blocks.map((block, index) => index % 2 === 1 ? <pre key={index}><code>{block.trim()}</code></pre> : renderArticleText(block, index))}</div><CompletionControl item={item} onProgressChange={onProgressChange} /></article>
-}
-
-function renderArticleText(block: string, blockIndex: number) {
-  return block.split(/\n\s*\n/).filter(Boolean).map((raw, paragraphIndex) => {
-    const paragraph = raw.trim()
-    const image = paragraph.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/i)
-    if (image) {
-      return <figure className="article-media" key={`${blockIndex}-${paragraphIndex}`}><img src={image[2]} alt={image[1]} loading="lazy" /><figcaption>{image[1]}</figcaption></figure>
-    }
-    if (paragraph.startsWith('## ')) return <h2 key={`${blockIndex}-${paragraphIndex}`}>{paragraph.slice(3)}</h2>
-    return <p key={`${blockIndex}-${paragraphIndex}`}>{paragraph}</p>
-  })
+function ArticleReader({ item, onEdit, onProgressChange, onContentChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void; onContentChange?: (item: ContentItem) => void }) {
+  return <article className="content-view article-reader"><ContentHeader item={item} onEdit={onEdit} /><h1>{item.title}</h1><div className="article-body"><RichText body={item.body} /></div><ReadingActions item={item} onContentChange={onContentChange} /><CompletionControl item={item} onProgressChange={onProgressChange} /></article>
 }
 
 function PathViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onEdit?: () => void; onProgressChange?: () => void }) {
@@ -84,7 +74,10 @@ function PathViewer({ item, onEdit, onProgressChange }: { item: ContentItem; onE
     const end = headingIndexes[index + 1] ?? lines.length
     return lines.slice(start, end).join(' ').replace(/^#{1,3}\s*/, '')
   }) : lines
-  const steps = rawSteps.map((line) => ({ done: /^\[x\]/i.test(line), text: line.replace(/^\[(?:x| )\]\s*/i, '').replace(/^[-*\d.]+\s*/, '') }))
+  const steps = rawSteps.map((line) => {
+    const normalized = line.replace(/^(?:[-*]|\d+[.)])\s*/, '')
+    return { done: /^\[x\]/i.test(normalized), text: normalized.replace(/^\[(?:x| )\]\s*/i, '') }
+  })
   const [completedIndexes, setCompletedIndexes] = useState<number[]>(steps.map((step, index) => step.done ? index : -1).filter((index) => index >= 0))
   useEffect(() => { void listAttempts(item.id).then((attempts) => {
     const latest = attempts.find((attempt) => attempt.kind === 'PROGRESS')
@@ -177,4 +170,44 @@ function CompletionControl({ item, onProgressChange }: { item: ContentItem; onPr
     setCompleted(true)
     onProgressChange?.()
   }}><Icon name={completed ? 'check-circle' : 'bookmark'} size={17} />{completed ? '已完成阅读' : '标记为已读'}</button>
+}
+
+function ReadingActions({ item, onContentChange }: { item: ContentItem; onContentChange?: (item: ContentItem) => void }) {
+  const [annotations, setAnnotations] = useState<Awaited<ReturnType<typeof listAnnotations>>>([])
+  const [feedback, setFeedback] = useState('')
+  const [notice, setNotice] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const load = () => listAnnotations(item.id).then(setAnnotations)
+  useEffect(() => { void load() }, [item.id])
+
+  async function saveHighlight() {
+    const selectedText = window.getSelection()?.toString().trim() ?? ''
+    if (!selectedText) { setNotice('请先在正文中选择一段文字。'); return }
+    setBusy(true)
+    try { await addAnnotation(item.id, { kind: 'HIGHLIGHT', selectedText }); await load(); setNotice('重点已保存。') }
+    finally { setBusy(false) }
+  }
+
+  async function saveFeedback() {
+    if (!feedback.trim()) return
+    setBusy(true)
+    try { await addAnnotation(item.id, { kind: 'FEEDBACK', note: feedback.trim() }); setFeedback(''); await load(); setNotice('建议已保存，可据此重新生成。') }
+    finally { setBusy(false) }
+  }
+
+  async function regenerate() {
+    setBusy(true)
+    setNotice('Agent 正在根据反馈修订内容…')
+    try { const revised = await regenerateContent(item.id); onContentChange?.(revised); setNotice('新版内容已生成，原反馈仍保留。') }
+    catch (cause) { setNotice(cause instanceof Error ? cause.message : '重新生成失败。') }
+    finally { setBusy(false) }
+  }
+
+  return <section className="reading-actions">
+    <header><div><small>阅读工作台</small><strong>标记重点或告诉 Agent 如何改进</strong></div><button className="secondary-button" disabled={busy} onClick={() => void saveHighlight()}><Icon name="highlight" size={15} />标记选中文字</button></header>
+    <div className="feedback-composer"><textarea maxLength={2000} onChange={(event) => setFeedback(event.target.value)} placeholder="例如：增加一个具体案例，删去重复段落，解释这个术语……" rows={2} value={feedback} /><button disabled={busy || !feedback.trim()} onClick={() => void saveFeedback()}><Icon name="message-circle" size={15} />提交建议</button></div>
+    {notice && <p className="reading-notice">{notice}</p>}
+    {annotations.length > 0 && <div className="annotation-list">{annotations.map((annotation) => <article key={annotation.id}><span><Icon name={annotation.kind === 'HIGHLIGHT' ? 'highlight' : 'message-circle'} size={14} /></span><p>{annotation.selectedText ?? annotation.note}</p><button aria-label="删除标记" onClick={async () => { await deleteAnnotation(item.id, annotation.id); await load() }}><Icon name="x" size={13} /></button></article>)}</div>}
+    {item.verificationStatus === 'AI_GENERATED' && <button className="regenerate-button" disabled={busy || !annotations.some((annotation) => annotation.kind === 'FEEDBACK')} onClick={() => void regenerate()}><Icon name="refresh" size={15} />根据全部建议重新生成</button>}
+  </section>
 }

@@ -15,6 +15,8 @@ import dev.lifeskill.learning.domain.LearningFolder;
 import dev.lifeskill.learning.domain.LearningAttempt;
 import dev.lifeskill.learning.domain.LearningAttemptKind;
 import dev.lifeskill.learning.domain.LearningAttemptStatus;
+import dev.lifeskill.learning.domain.LearningAnnotation;
+import dev.lifeskill.learning.domain.LearningAnnotationKind;
 import dev.lifeskill.shared.application.IdGenerator;
 
 @Service
@@ -98,6 +100,35 @@ public class LearningApplicationService {
     public List<LearningAttempt> listAttempts(UUID contentId) {
         requireContent(contentId);
         return repository.findAttempts(contentId);
+    }
+
+    @Transactional
+    public LearningAnnotation addAnnotation(
+            UUID contentId, LearningAnnotationKind kind, String selectedText, String note) {
+        requireContent(contentId);
+        return repository.saveAnnotation(new LearningAnnotation(
+                idGenerator.nextId(), contentId, kind, selectedText, note, clock.instant()));
+    }
+
+    @Transactional(readOnly = true)
+    public List<LearningAnnotation> listAnnotations(UUID contentId) {
+        requireContent(contentId);
+        return repository.findAnnotations(contentId);
+    }
+
+    @Transactional
+    public void deleteAnnotation(UUID contentId, UUID annotationId) {
+        requireContent(contentId);
+        boolean belongsToContent = repository.findAnnotations(contentId).stream()
+                .anyMatch(annotation -> annotation.id().equals(annotationId));
+        if (!belongsToContent) throw new LearningResourceNotFoundException("Learning annotation", annotationId);
+        repository.deleteAnnotation(annotationId);
+    }
+
+    @Transactional
+    public ContentItem applyRegeneration(UUID contentId, String title, String body) {
+        ContentItem content = requireContent(contentId);
+        return repository.saveContent(content.regenerate(title, body, clock.instant()));
     }
 
     @Transactional(readOnly = true)

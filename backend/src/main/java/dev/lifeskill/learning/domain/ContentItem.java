@@ -49,6 +49,15 @@ public record ContentItem(
                 Objects.requireNonNull(changedAt, "Content item update time is required"));
     }
 
+    public ContentItem regenerate(String nextTitle, String nextBody, Instant changedAt) {
+        if (!"AI_GENERATED".equals(verificationStatus)) {
+            throw new IllegalArgumentException("Only AI-generated learning content can be regenerated");
+        }
+        return new ContentItem(
+                id, folderId, sourceSkillRunId, type, nextTitle, nextBody,
+                "AI_GENERATED", createdAt, Objects.requireNonNull(changedAt, "Content item update time is required"));
+    }
+
     private static String requireText(String value, String fieldName, int maxLength) {
         if (value == null || value.isBlank()) throw new IllegalArgumentException(fieldName + " must not be blank");
         String normalized = value.trim();

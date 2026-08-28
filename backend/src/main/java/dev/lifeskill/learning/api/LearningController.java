@@ -21,7 +21,10 @@ import dev.lifeskill.learning.api.dto.LearningFolderResponse;
 import dev.lifeskill.learning.api.dto.LearningAttemptRequest;
 import dev.lifeskill.learning.api.dto.LearningAttemptResponse;
 import dev.lifeskill.learning.api.dto.LearningProgressResponse;
+import dev.lifeskill.learning.api.dto.LearningAnnotationRequest;
+import dev.lifeskill.learning.api.dto.LearningAnnotationResponse;
 import dev.lifeskill.learning.application.LearningApplicationService;
+import dev.lifeskill.learning.application.LearningContentRevisionService;
 import dev.lifeskill.learning.domain.ContentItemType;
 import jakarta.validation.Valid;
 
@@ -29,9 +32,11 @@ import jakarta.validation.Valid;
 @RequestMapping("/api")
 public class LearningController {
     private final LearningApplicationService service;
+    private final LearningContentRevisionService revisions;
 
-    public LearningController(LearningApplicationService service) {
+    public LearningController(LearningApplicationService service, LearningContentRevisionService revisions) {
         this.service = service;
+        this.revisions = revisions;
     }
 
     @GetMapping("/learning-folders")
@@ -103,6 +108,33 @@ public class LearningController {
                 request.completedUnitIndexes()));
         return ResponseEntity.created(URI.create("/api/content-items/" + contentId + "/attempts/" + response.id()))
                 .body(response);
+    }
+
+    @GetMapping("/content-items/{contentId}/annotations")
+    public List<LearningAnnotationResponse> listAnnotations(@PathVariable UUID contentId) {
+        return service.listAnnotations(contentId).stream().map(LearningAnnotationResponse::from).toList();
+    }
+
+    @PostMapping("/content-items/{contentId}/annotations")
+    public ResponseEntity<LearningAnnotationResponse> addAnnotation(
+            @PathVariable UUID contentId,
+            @Valid @RequestBody LearningAnnotationRequest request) {
+        var response = LearningAnnotationResponse.from(service.addAnnotation(
+                contentId, request.kind(), request.selectedText(), request.note()));
+        return ResponseEntity.created(URI.create(
+                "/api/content-items/" + contentId + "/annotations/" + response.id())).body(response);
+    }
+
+    @DeleteMapping("/content-items/{contentId}/annotations/{annotationId}")
+    public ResponseEntity<Void> deleteAnnotation(
+            @PathVariable UUID contentId, @PathVariable UUID annotationId) {
+        service.deleteAnnotation(contentId, annotationId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/content-items/{contentId}/regenerations")
+    public ContentItemResponse regenerate(@PathVariable UUID contentId) {
+        return ContentItemResponse.from(revisions.regenerate(contentId));
     }
 
     @DeleteMapping("/content-items/{contentId}")

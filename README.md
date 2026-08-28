@@ -82,6 +82,8 @@ cd backend
 - `POST /api/pulse-items/{id}/learning-folder`：幂等生成学习文件夹、路径、文章和测验
 - `GET /api/learning-folders/{id}/progress`：读取学习文件夹进度
 - `POST /api/content-items/{id}/attempts`：保存路径进度、阅读完成或测验结果
+- `GET/POST/DELETE /api/content-items/{id}/annotations`：保存重点与反馈
+- `POST /api/content-items/{id}/regenerations`：根据已保存反馈重生成 AI 学习内容
 
 ### 3. 前端
 

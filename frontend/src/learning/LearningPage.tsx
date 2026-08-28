@@ -7,7 +7,7 @@ import {
   getLearningProgress, listContent, listFolders, updateContent, updateFolder,
 } from './learningApi'
 import type { ContentItem, ContentItemType, LearningFolder, LearningProgress } from './learningApi'
-import { LearningContentViewer, contentTypeConfig, contentTypeOrder } from './LearningContentViews'
+import { LearningContentViewer, contentTypeConfig } from './LearningContentViews'
 
 type EditorState =
   | { kind: 'folder'; target: LearningFolder | null }
@@ -36,8 +36,12 @@ export function LearningPage() {
 
   const selectedFolder = folders.find((folder) => folder.id === selectedFolderId) ?? null
   const selectedItem = items.find((item) => item.id === selectedItemId) ?? null
-  const groupedItems = useMemo(() => contentTypeOrder
-    .map((type) => ({ type, items: items.filter((item) => item.type === type) }))
+  const groupedItems = useMemo(() => [
+    { label: '计划', types: ['LEARNING_PATH', 'CHECKLIST'] as ContentItemType[] },
+    { label: '知识', types: ['REPORT', 'ARTICLE', 'NOTE'] as ContentItemType[] },
+    { label: '练习', types: ['QUIZ'] as ContentItemType[] },
+  ]
+    .map((group) => ({ label: group.label, items: items.filter((item) => group.types.includes(item.type)) }))
     .filter((group) => group.items.length > 0), [items])
 
   const loadFolders = useCallback(async () => {
@@ -178,7 +182,7 @@ export function LearningPage() {
     <section className={`learning-view mobile-${mobileLevel}`}>
       <aside className="learning-pane folder-pane">
         <header className="pane-header">
-          <div><small>学习</small><strong>学习库</strong></div>
+          <div><small>学习空间</small><strong>主题</strong></div>
           <button aria-label="创建文件夹" className="icon-button" onClick={() => handleOpenEditor({ kind: 'folder', target: null })}><Icon name="plus" size={18} /></button>
         </header>
         <div className="folder-list">
@@ -194,13 +198,13 @@ export function LearningPage() {
         </div>
         {!isLoading && folders.length === 0 && (
           <button className="pane-empty-action" onClick={() => handleOpenEditor({ kind: 'folder', target: null })}>
-            <Icon name="folder" size={20} /><strong>创建第一个文件夹</strong><span>按主题整理长期学习内容</span>
+            <Icon name="folder" size={20} /><strong>创建第一个主题</strong><span>一个目标，一个主题</span>
           </button>
         )}
       </aside>
 
       <section className="learning-pane file-pane">
-        <MobileBack label="学习库" onClick={() => setMobileLevel('folders')} />
+        <MobileBack label="主题" onClick={() => setMobileLevel('folders')} />
         <header className="pane-header file-pane-header">
           <div><small>文件夹</small><strong>{selectedFolder?.name ?? '选择文件夹'}</strong></div>
           {selectedFolder && <button aria-label="新建内容" className="icon-button primary" onClick={() => handleOpenEditor({ kind: 'content', target: null })}><Icon name="plus" size={18} /></button>}
@@ -208,7 +212,7 @@ export function LearningPage() {
 
         {selectedFolder && (
           <div className="folder-summary">
-            <p>{selectedFolder.description || '用于沉淀可复习、可继续编辑的学习内容。'}</p>
+            <p>{selectedFolder.description || 'Agent 生成的计划、知识和练习会自动归入这个主题。'}</p>
             {progress && <div className="learning-progress-summary"><span><strong>{progress.completionPercent}%</strong><small>整体进度</small></span><i><b style={{ width: `${progress.completionPercent}%` }} /></i><span><small>{progress.completedCount} / {progress.contentCount} 份完成{progress.averageQuizScore !== null ? ` · 测验均分 ${progress.averageQuizScore}` : ''}</small></span></div>}
             <button onClick={() => handleOpenEditor({ kind: 'folder', target: selectedFolder })}><Icon name="pencil" size={14} />编辑文件夹</button>
           </div>
@@ -216,17 +220,20 @@ export function LearningPage() {
 
         <div className="grouped-file-list">
           {groupedItems.map((group) => (
-            <section key={group.type}>
-              <h2>{contentTypeConfig[group.type].group}</h2>
+            <section key={group.label}>
+              <h2>{group.label}</h2>
               <div className="file-group-card">
                 {group.items.map((item) => {
                   const config = contentTypeConfig[item.type]
                   return (
-                    <button className={selectedItemId === item.id ? 'file-row active' : 'file-row'} key={item.id} onClick={() => handleSelectItem(item.id)}>
-                      <span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span>
-                      <span><strong>{item.title}</strong><small>{config.label} · {formatDate(item.updatedAt)}</small></span>
-                      <Icon name="chevron-right" size={16} />
-                    </button>
+                    <div className={selectedItemId === item.id ? 'file-row-wrap active' : 'file-row-wrap'} key={item.id}>
+                      <button className="file-row" onClick={() => handleSelectItem(item.id)}>
+                        <span className={`file-type-icon ${config.tone}`}><Icon name={config.icon} size={17} /></span>
+                        <span><strong>{item.title}</strong><small>{config.label} · {formatDate(item.updatedAt)}</small></span>
+                        <Icon name="chevron-right" size={16} />
+                      </button>
+                      <button aria-label={`删除 ${item.title}`} className={deleteTarget === `content:${item.id}` ? 'file-delete armed' : 'file-delete'} onClick={() => void handleDeleteContent(item.id)} title={deleteTarget === `content:${item.id}` ? '再次点击确认' : '删除文件'}><Icon name="trash" size={14} /></button>
+                    </div>
                   )
                 })}
               </div>
@@ -273,13 +280,13 @@ export function LearningPage() {
         ) : selectedItem ? (
           <>
             <MobileBack label={selectedFolder?.name ?? '文件列表'} onClick={() => setMobileLevel('files')} />
-            <LearningContentViewer item={selectedItem} onEdit={() => handleOpenEditor({ kind: 'content', target: selectedItem })} onProgressChange={() => selectedFolderId && void loadProgress(selectedFolderId)} />
+            <LearningContentViewer item={selectedItem} onContentChange={(next) => setItems((current) => current.map((item) => item.id === next.id ? next : item))} onEdit={() => handleOpenEditor({ kind: 'content', target: selectedItem })} onProgressChange={() => selectedFolderId && void loadProgress(selectedFolderId)} />
           </>
         ) : (
           <div className="content-placeholder">
             <span><Icon name="book" size={24} /></span>
             <strong>{selectedFolder ? '选择一份内容开始阅读' : '从左侧选择学习文件夹'}</strong>
-            <p>学习库采用“文件夹 → 文件 → 内容”三级结构，减少寻找入口的成本。</p>
+            <p>主题承载一个目标，内容只分为计划、知识和练习。</p>
           </div>
         )}
       </main>

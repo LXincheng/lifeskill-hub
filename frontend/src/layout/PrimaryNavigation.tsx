@@ -1,6 +1,7 @@
 import { Icon } from '../components/Icon'
 import type { IconName } from '../components/Icon'
 import { workspaceCopy } from '../copy'
+import type { ThemeMode } from '../theme/useTheme'
 
 export type PrimaryView = 'chat' | 'learning' | 'pulse'
 
@@ -9,6 +10,8 @@ type PrimaryNavigationProps = {
   isBusy: boolean
   onNavigate: (view: PrimaryView) => void
   onNewConversation: () => void
+  theme: ThemeMode
+  onToggleTheme: () => void
 }
 
 const navigationItems: Array<{ id: PrimaryView; label: string; detail: string; icon: IconName }> = [
@@ -22,6 +25,8 @@ export function PrimaryNavigation({
   isBusy,
   onNavigate,
   onNewConversation,
+  theme,
+  onToggleTheme,
 }: PrimaryNavigationProps) {
   return (
     <>
@@ -51,7 +56,10 @@ export function PrimaryNavigation({
             </button>
           ))}
         </nav>
-        <div className="sidebar-footer" aria-label="本地工作区"><span className="workspace-status" /><span><strong>Local workspace</strong><small>PostgreSQL · DeepSeek</small></span></div>
+        <div className="sidebar-footer">
+          <button aria-label={theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'} className="theme-toggle" onClick={onToggleTheme} title={theme === 'dark' ? '明亮模式' : '暗黑模式'}><Icon name={theme === 'dark' ? 'sun' : 'moon'} size={17} /><span>{theme === 'dark' ? '明亮模式' : '暗黑模式'}</span></button>
+          <div aria-label="本地工作区"><span className="workspace-status" /><span><strong>服务已连接</strong><small>本地工作区</small></span></div>
+        </div>
       </aside>
 
       <nav className="mobile-navigation" aria-label="主导航">
@@ -66,6 +74,10 @@ export function PrimaryNavigation({
             <span>{item.label}</span>
           </button>
         ))}
+        <button aria-label={theme === 'dark' ? '切换到明亮模式' : '切换到暗黑模式'} onClick={onToggleTheme}>
+          <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={21} />
+          <span>{theme === 'dark' ? '明亮' : '暗黑'}</span>
+        </button>
       </nav>
     </>
   )

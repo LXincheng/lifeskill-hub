@@ -10,7 +10,7 @@ React Web / PWA
 Spring Boot 模块化单体
 ├── conversation   已实现：对话、意图、执行收据
 ├── skill          已实现：定义、版本、确认、状态、手动运行与每周调度
-├── learning       已实现：文件夹、内容 CRUD 和基础浏览
+├── learning       已实现：主题/内容 CRUD、进度、测验、批注与受控重生成
 ├── pulse          已实现：可靠动态、来源数量、推荐原因与证据入口
 ├── integration    已实现：DeepSeek 与 Spring AI 官方 GitHub Release Adapter
 ├── agent          已实现：Runtime、角色、Harness、SSE、Policy Gate
@@ -106,6 +106,7 @@ Flyway 已创建第一批核心表，但存在数据表不等于对应运行能�
 - 聊天流式事件后续使用 SSE；普通配置使用 REST。
 - 所有长期写操作必须设计幂等键；当前 SkillDraft 确认已实现，后续运行、生成和通知接口接入时分别补齐。
 - 学习进度采用追加式 `learning_attempt` 保存，不重写原始 ContentItem。这样既能恢复最新进度，也保留测验历史；读取文件夹时由应用服务聚合最新一次尝试。
+- 圈画与反馈使用独立 `learning_annotation`，不污染原始正文。AI 内容重生成由专用应用服务调用 Model Port，校验内容结构后才替换版本；核验报告正文不开放直接编辑。
 - 错误返回统一 Problem Details。
 - API DTO 与 JPA Entity 分离。
 - 外部模型和来源通过端口/适配器隔离，领域层不依赖具体 SDK。

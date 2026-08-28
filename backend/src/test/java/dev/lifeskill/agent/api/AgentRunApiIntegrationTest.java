@@ -130,6 +130,10 @@ class AgentRunApiIntegrationTest {
         when(model.composeReport(anyString(), any(), any())).thenReturn(new AgentModelPort.ReportResult(
                 "9月黄金市场研究报告",
                 "## 01 核心观点\n- 官方研究结论。\n\n## 06 官方来源\n- Evidence ID"));
+        when(model.reviseLearningContent(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(new AgentModelPort.ContentRevision(
+                        "四周学习路径 · 修订版",
+                        "- [ ] 理解模型与 Harness 边界\n- [ ] 追踪 Evidence 与 Claim\n- [ ] 验证没有 Evidence 的 Claim 会被门禁拦截\n- [ ] 完成发布练习"));
     }
 
     @Test
@@ -201,6 +205,16 @@ class AgentRunApiIntegrationTest {
                 "select count(*) from content_item where folder_id = (select folder_id from content_item where id = ?) and verification_status = 'AI_GENERATED'",
                 Integer.class, UUID.fromString(contentId));
         org.assertj.core.api.Assertions.assertThat(plannedItems).isEqualTo(3);
+
+        mockMvc.perform(post("/api/content-items/{contentId}/annotations", contentId)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"FEEDBACK\",\"note\":\"补充门禁示例\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/api/content-items/{contentId}/regenerations", contentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("四周学习路径 · 修订版"))
+                .andExpect(jsonPath("$.body").value(org.hamcrest.Matchers.containsString("没有 Evidence")))
+                .andExpect(jsonPath("$.verificationStatus").value("AI_GENERATED"));
     }
 
     private String waitForTerminalRun(String runId) throws Exception {

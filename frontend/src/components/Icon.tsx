@@ -12,16 +12,20 @@ import {
   ChevronRight,
   Clock3,
   Code2,
+  Copy,
   ExternalLink,
   FileText,
   FileQuestion,
   Filter,
   Folder,
   Globe2,
+  Highlighter,
   History,
   LibraryBig,
   ListChecks,
+  Moon,
   MessageSquare,
+  MessageCircle,
   Pencil,
   Plus,
   RefreshCw,
@@ -33,6 +37,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Sun,
   StickyNote,
   Target,
   Trash2,
@@ -55,16 +60,20 @@ export type IconName =
   | 'chevron-right'
   | 'clock'
   | 'code'
+  | 'copy'
   | 'external-link'
   | 'file'
   | 'file-question'
   | 'filter'
   | 'folder'
   | 'globe'
+  | 'highlight'
   | 'history'
   | 'library'
   | 'list'
+  | 'moon'
   | 'message'
+  | 'message-circle'
   | 'pencil'
   | 'plus'
   | 'refresh'
@@ -76,6 +85,7 @@ export type IconName =
   | 'settings'
   | 'shield'
   | 'sparkles'
+  | 'sun'
   | 'note'
   | 'target'
   | 'trash'
@@ -102,16 +112,20 @@ const icons: Record<IconName, LucideIcon> = {
   'chevron-right': ChevronRight,
   clock: Clock3,
   code: Code2,
+  copy: Copy,
   'external-link': ExternalLink,
   file: FileText,
   'file-question': FileQuestion,
   filter: Filter,
   folder: Folder,
   globe: Globe2,
+  highlight: Highlighter,
   history: History,
   library: LibraryBig,
   list: ListChecks,
+  moon: Moon,
   message: MessageSquare,
+  'message-circle': MessageCircle,
   pencil: Pencil,
   plus: Plus,
   refresh: RefreshCw,
@@ -123,6 +137,7 @@ const icons: Record<IconName, LucideIcon> = {
   settings: Settings,
   shield: ShieldCheck,
   sparkles: Sparkles,
+  sun: Sun,
   note: StickyNote,
   target: Target,
   trash: Trash2,

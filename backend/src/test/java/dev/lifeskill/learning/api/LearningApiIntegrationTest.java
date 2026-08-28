@@ -124,4 +124,37 @@ class LearningApiIntegrationTest {
                 .andExpect(jsonPath("$.startedCount").value(1))
                 .andExpect(jsonPath("$.completedCount").value(0));
     }
+
+    @Test
+    void persistsHighlightsAndFeedbackBesideReadOnlyContent() throws Exception {
+        String folder = mockMvc.perform(post("/api/learning-folders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"阅读批注\",\"description\":\"批注测试\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String folderId = JsonPath.read(folder, "$.id");
+        String content = mockMvc.perform(post("/api/learning-folders/{folderId}/content-items", folderId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"ARTICLE\",\"title\":\"可靠研究\",\"body\":\"Evidence 支撑 Claim。\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String contentId = JsonPath.read(content, "$.id");
+
+        String highlight = mockMvc.perform(post("/api/content-items/{contentId}/annotations", contentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"HIGHLIGHT\",\"selectedText\":\"Evidence 支撑 Claim\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.kind").value("HIGHLIGHT"))
+                .andReturn().getResponse().getContentAsString();
+        String annotationId = JsonPath.read(highlight, "$.id");
+
+        mockMvc.perform(post("/api/content-items/{contentId}/annotations", contentId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"kind\":\"FEEDBACK\",\"note\":\"补充一个具体例子\"}"))
+                .andExpect(status().isCreated());
+        mockMvc.perform(get("/api/content-items/{contentId}/annotations", contentId))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)));
+        mockMvc.perform(delete("/api/content-items/{contentId}/annotations/{annotationId}", contentId, annotationId))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(get("/api/content-items/{contentId}/annotations", contentId))
+                .andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(1)));
+    }
 }

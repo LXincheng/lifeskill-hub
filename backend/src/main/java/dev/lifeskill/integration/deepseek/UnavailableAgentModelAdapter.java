@@ -33,4 +33,7 @@ public class UnavailableAgentModelAdapter implements AgentModelPort {
 
     @Override
     public LearningResult composePersonalLearning(String objective) { throw disabled(); }
+
+    @Override
+    public ContentRevision reviseLearningContent(String type, String title, String body, String feedback) { throw disabled(); }
 }

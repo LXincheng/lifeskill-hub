@@ -18,6 +18,8 @@ public interface AgentModelPort {
 
     LearningResult composePersonalLearning(String objective);
 
+    ContentRevision reviseLearningContent(String type, String title, String body, String feedback);
+
     record ResearchResult(String statement, List<String> evidenceIds) {
     }
 
@@ -39,5 +41,8 @@ public interface AgentModelPort {
             String articleBody,
             String quizTitle,
             String quizBody) {
+    }
+
+    record ContentRevision(String title, String body) {
     }
 }

@@ -29,6 +29,7 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
     private final ChatClient personalPathComposer;
     private final ChatClient personalArticleComposer;
     private final ChatClient personalQuizComposer;
+    private final ChatClient learningRevisionComposer;
     private final ObjectMapper objectMapper;
 
     public DeepSeekAgentModelAdapter(ChatClient.Builder builder, ObjectMapper objectMapper) {
@@ -99,6 +100,14 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
                 你是学习测验设计师。根据用户目标返回 title 和 body。
                 body 必须包含 3-5 道选择题；每题由题目、两个以“- ”开头的选项和“答案: 1/2”组成，题间用“---”分隔。
                 内容使用中文，不查询或编造最新外部事实，不输出思维链。
+                """).build();
+        this.learningRevisionComposer = builder.clone().defaultSystem("""
+                你是学习内容修订师。根据原内容和用户反馈返回新的 title 与 body。
+                保留正确且有用的内容，明确修复反馈指出的问题；不要声称新增内容已经过官方 Evidence 核验。
+                使用结构清楚的中文 Markdown：标题、段落、列表、引用卡片、代码块和带描述文字的链接。
+                若内容类型是 LEARNING_PATH，body 必须包含 3-10 个以“- [ ] ”开头的独立步骤。
+                若内容类型是 QUIZ，body 必须包含 3-8 道题，每题使用两个“- ”选项和“答案: 1/2”，题间用“---”分隔。
+                不得输出思维链、HTML、裸露长 URL 或 Markdown 教程说明。
                 """).build();
     }
 
@@ -187,6 +196,17 @@ public class DeepSeekAgentModelAdapter implements AgentModelPort {
                 folder.folderName().trim(), folder.folderDescription().trim(),
                 path.title().trim(), path.body().trim(), article.title().trim(),
                 article.body().trim(), quiz.title().trim(), quiz.body().trim());
+    }
+
+    @Override
+    public ContentRevision reviseLearningContent(String type, String title, String body, String feedback) {
+        ContentResponse response = call(learningRevisionComposer,
+                "内容类型：" + type + "\n原标题：" + title + "\n用户反馈：\n" + feedback + "\n原内容：\n" + body,
+                ContentResponse.class);
+        requireText(response.title(), "Revised learning title");
+        requireText(response.body(), "Revised learning body");
+        if (response.body().length() > 20_000) throw new IllegalStateException("Revised learning content is too long");
+        return new ContentRevision(response.title().trim(), response.body().trim());
     }
 
     private <T> T call(ChatClient client, String prompt, Class<T> responseType) {
